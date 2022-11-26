@@ -3,21 +3,12 @@ const canvas = document.getElementById("myCanvas");
 const ctx = canvas.getContext("2d");
 
 ctx.strokeStyle = 'black';
-ctx.lineWidth = .2;
+ctx.lineWidth = .5;
 
 const canvasWidth = 350
 const canvasHeight = 700
 const blockSize = 35
-const centerX = initCenterX();
-
-function initCenterX() {
-    let center = canvasWidth / 2;
-    let rest = center % 35;
-    if(rest != 0) {
-        center -= rest;
-    }
-    return center;
-}
+let centerX;
 
 const Blocks = {
     Blue: new Image(),
@@ -99,10 +90,16 @@ function init() {
     for(let i = 0; i < canvasHeight / blockSize; i++) {
         let row = [];
         for(let y = 0; y < canvasWidth / blockSize; y++) {
-            row.push(0);
+            row.push({
+                block: null,
+                active: false,
+                x: y * blockSize,
+                y: i * blockSize,
+            });
         }
         Playfield.push(row);
     }
+    centerX = Math.floor(Playfield[0].length / 2);
     drawGrid();
     loadImages().then(play);
 }
@@ -117,6 +114,7 @@ function drawGrid() {
         ctx.moveTo(0, y);
         ctx.lineTo(canvasWidth, y);
     }
+    ctx.closePath();
     ctx.stroke();
 }
 
@@ -148,20 +146,47 @@ function spawnTetromino() {
     let tetromino = Tetrominos[Math.floor(Math.random() * Tetrominos.length)];
     let length = tetromino.shape[0].length;
     let halfLength = Math.floor(length / 2) + length % 2;
-    let xSpawn = centerX - (halfLength * blockSize);
-    
-    for(let i = 0; i < tetromino.shape.length; i++) {
+    let xSpawn = centerX - halfLength;
+
+    for(let y = 0; y < tetromino.shape.length; y++) {
         let xLastSpawn = xSpawn;
-        tetromino.shape[i].forEach(block => {
+        tetromino.shape[y].forEach(block => {
             if(block != 0) {
-                drawBlock(tetromino.block, xLastSpawn, i * blockSize);
+                Playfield[y][xLastSpawn].active = true;
+                Playfield[y][xLastSpawn].block = tetromino.block;
             }
-            xLastSpawn += blockSize;
+            xLastSpawn++;
         })
     }
+
+    refreshGrid();
 }
 
+function refreshGrid() {
+    let activeBlocks = [];
+    Playfield.forEach(line => {
+        line.forEach((block) => {
+            if (block.active == true) {
+                activeBlocks.push(block);
+                drawBlock(block.block, block.x, block.y);
+            }
+        });
+    });
+    
+    setTimeout(() => {
+        activeBlocks.forEach(block => {
+            //let offset = ctx.lineWidth+.3;
+            //let blockPlusLineSize = blockSize+offset;
+            //console.log(blockPlusLineSize);
+            //ctx.clearRect(block.x-offset, block.y-offset, blockPlusLineSize, blockPlusLineSize);
+        })
+    }, 1000);
+}
+
+
+
 function play() {
+    console.log(Playfield)
     spawnTetromino();
 }
 
