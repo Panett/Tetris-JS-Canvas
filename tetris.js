@@ -1,12 +1,14 @@
 /** @type {HTMLCanvasElement} */
-const canvas = document.getElementById("myCanvas");
-const ctx = canvas.getContext("2d");
+const gridCanvas = document.getElementById("gridCanvas");
 
-ctx.strokeStyle = 'black';
-ctx.lineWidth = .5;
+/** @type {HTMLCanvasElement} */
+const gameCanvas = document.getElementById("gameCanvas");
 
-const canvasWidth = 350
-const canvasHeight = 700
+const gctx = gridCanvas.getContext("2d");
+const ctx = gameCanvas.getContext("2d");
+
+const canvasWidth = gameCanvas.getAttribute("width");
+const canvasHeight = gameCanvas.getAttribute("height");
 const blockSize = 35
 let centerX;
 
@@ -105,17 +107,19 @@ function init() {
 }
 
 function drawGrid() {
-    ctx.beginPath();
+    gctx.strokeStyle = 'black';
+    gctx.lineWidth = .5;
+    gctx.beginPath();
     for (let x = 0; x <= canvasWidth; x += blockSize) {
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvasHeight);
+        gctx.moveTo(x, 0);
+        gctx.lineTo(x, canvasHeight);
     }
     for (let y = 0; y <= canvasHeight; y += blockSize) {
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvasWidth, y);
+        gctx.moveTo(0, y);
+        gctx.lineTo(canvasWidth, y);
     }
-    ctx.closePath();
-    ctx.stroke();
+    gctx.stroke();
+    gctx.closePath();
 }
 
 function loadImage(img, src) {
@@ -142,8 +146,8 @@ function drawBlock(block, x, y) {
 }
 
 function spawnTetromino() {
-    
-    let tetromino = Tetrominos[Math.floor(Math.random() * Tetrominos.length)];
+    //let tetromino = Tetrominos[Math.floor(Math.random() * Tetrominos.length)];
+    let tetromino = Tetrominos[3];
     let length = tetromino.shape[0].length;
     let halfLength = Math.floor(length / 2) + length % 2;
     let xSpawn = centerX - halfLength;
@@ -163,30 +167,58 @@ function spawnTetromino() {
 }
 
 function refreshGrid() {
-    let activeBlocks = [];
-    Playfield.forEach(line => {
-        line.forEach((block) => {
+    let activeBlocksPositions = [];
+    Playfield.forEach((line, i) => {
+        line.forEach((block, y) => {
             if (block.active == true) {
-                activeBlocks.push(block);
+                activeBlocksPositions.push({i: i, y: y});
                 drawBlock(block.block, block.x, block.y);
             }
         });
     });
-    
+
+    activeBlocksPositions = activeBlocksPositions.reverse();
+
     setTimeout(() => {
-        activeBlocks.forEach(block => {
-            //let offset = ctx.lineWidth+.3;
-            //let blockPlusLineSize = blockSize+offset;
-            //console.log(blockPlusLineSize);
-            //ctx.clearRect(block.x-offset, block.y-offset, blockPlusLineSize, blockPlusLineSize);
+        let futureBlocks = [];
+        let outOfBound = false;
+        activeBlocksPositions.every(activeBlockPosition => {
+            if(activeBlockPosition.i + 1 > Playfield.length - 1) {
+                console.log("HO PRESO ER PALO");
+                outOfBound = true;
+                return false;
+            }
+            let futureBlockPosition = {
+                i: activeBlockPosition.i + 1,
+                y: activeBlockPosition.y,
+                block: Playfield[activeBlockPosition.i][activeBlockPosition.y].block
+            };
+            console.log(futureBlockPosition)
+            futureBlocks.push(futureBlockPosition);
+            return true;
         })
+        
+        futureBlocks.forEach(futureBlock => {
+            descendBlock(futureBlock);
+        })
+        refreshGrid();
     }, 1000);
 }
 
+function descendBlock(futureBlock) {
+    let block = Playfield[futureBlock.i][futureBlock.y];
+    ctx.clearRect(block.x, block.y, blockSize, blockSize);
 
+    //let tmpBlock = Playfield[futureBlock.i][futureBlock.y].block
+    Playfield[futureBlock.i][futureBlock.y].active = false;
+    Playfield[futureBlock.i][futureBlock.y].block = null;
+
+    //Playfield[futureBlock.i+1][futureBlock.y].block = tmpBlock;
+    Playfield[futureBlock.i+1][futureBlock.y].active = true;
+    Playfield[futureBlock.i+1][futureBlock.y].block = futureBlock.block;
+}
 
 function play() {
-    console.log(Playfield)
     spawnTetromino();
 }
 
