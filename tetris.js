@@ -182,20 +182,21 @@ function refreshGrid() {
     setTimeout(() => {
 
         let futureBlocksPositions = [];
-        let outOfBound = false;
         activeBlocksPositions.every(activeBlockPosition => {
-            if (activeBlockPosition.i + 1 > Playfield.length - 1) {
+            if (activeBlockPosition.i + 1 > Playfield.length - 1 // se esci fuori campo di gioco
+                || (Playfield[activeBlockPosition.i + 1][activeBlockPosition.y].image != null // o se tocchi un altro blocco
+                    && !activeBlocksPositions.includes(activeBlockPosition)) // che non è della tua figura
+            ) {
                 console.log("HO PRESO ER PALO");
-                outOfBound = true;
+                futureBlocksPositions = [];
                 return false;
             }
-            let futureBlockPosition = {
+            futureBlocksPositions.push({
                 i: activeBlockPosition.i + 1,
                 y: activeBlockPosition.y
-            };
-            futureBlocksPositions.push(futureBlockPosition);
+            });
             return true;
-        })
+        });
 
         // activeBlocksPositions
         // futureBlocksPositions
@@ -205,7 +206,7 @@ function refreshGrid() {
         }
 
         refreshGrid();
-    }, 1000);
+    }, 100);
 }
 
 function descendBlock(currentBlockPosition, futureBlockPosition) {
