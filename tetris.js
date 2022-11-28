@@ -81,6 +81,12 @@ const Tetrominos = [{
 
 let Playfield = [];
 
+const Directions = {
+    DOWN: "DOWN",
+    RIGHT: "RIGHT",
+    LEFT: "LEFT"
+};
+
 function init() {
     for (let i = 0; i < canvasHeight / blockSize; i++) {
         let row = [];
@@ -96,17 +102,14 @@ function init() {
     }
     centerX = Math.floor(Playfield[0].length / 2);
     drawGrid();
-    loadImages().then(play);
+    loadImages().then(spawnTetromino);
 }
 
 function drawGrid() {
     gctx.strokeStyle = 'white';
-    gctx.lineWidth = 3.5;
+    gctx.lineWidth = 3.3;
     gctx.fillStyle = "#a29bfe";
-
     gctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-    gctx.beginPath();
     for (let x = 0; x <= canvasWidth; x += blockSize) {
         gctx.moveTo(x, 0);
         gctx.lineTo(x, canvasHeight);
@@ -116,7 +119,6 @@ function drawGrid() {
         gctx.lineTo(canvasWidth, y);
     }
     gctx.stroke();
-    gctx.closePath();
 }
 
 function loadImage(img, src) {
@@ -181,11 +183,28 @@ function refreshGrid() {
 
     setTimeout(() => {
 
-        let futureBlocksPositions = [];
-        let canDescend = currentBlocksPositions.every(currentBlockPosition => {
-            if (currentBlockPosition.i + 1 > Playfield.length - 1 // se esci fuori campo di gioco
-                || (Playfield[currentBlockPosition.i + 1][currentBlockPosition.y].image != null // o se tocchi un altro blocco
-                    && !currentBlocksPositions.includes(currentBlockPosition)) // che non è della tua figura
+        let futureBlocksPositions = getFutureBlockPositions(currentBlocksPositions, Directions.DOWN);
+        let canDescend = futureBlocksPositions.length > 0 ? true : false;
+        console.log("canDescend:", canDescend, "futureBlocksPositions:", futureBlocksPositions);
+
+        for (let i = 0; i < futureBlocksPositions.length; i++) {
+            descendBlock(currentBlocksPositions[i], futureBlocksPositions[i]);
+        }
+
+        if (canDescend) {
+            refreshGrid();
+        }
+        // else spawnTetromino();
+    }, 100);
+}
+
+function getFutureBlockPositions(currentBlocksPositions, direction) {
+    let futureBlocksPositions = [];
+    if (direction == Directions.DOWN) {
+        currentBlocksPositions.every(currentBlockPosition => {
+            if (currentBlockPosition.i + 1 > Playfield.length - 1 || // se esci fuori campo di gioco (in basso)
+                (Playfield[currentBlockPosition.i + 1][currentBlockPosition.y].image != null && // o se tocchi un altro blocco
+                    !currentBlocksPositions.includes(currentBlockPosition)) // che non è della tua figura
             ) {
                 return false;
             }
@@ -195,16 +214,8 @@ function refreshGrid() {
             });
             return true;
         });
-
-        console.log("canDescend:", canDescend, "futureBlocksPositions:", futureBlocksPositions);
-
-        for (let i = 0; i < futureBlocksPositions.length; i++) {
-            descendBlock(currentBlocksPositions[i], futureBlocksPositions[i]);
-        }
-
-        if(canDescend) refreshGrid();
-        // else spawnTetromino();
-    }, 100);
+    }
+    return futureBlocksPositions;
 }
 
 function descendBlock(currentBlockPosition, futureBlockPosition) {
@@ -216,10 +227,6 @@ function descendBlock(currentBlockPosition, futureBlockPosition) {
 
     Playfield[futureBlockPosition.i][futureBlockPosition.y].image = tmpBlockImg;
     Playfield[futureBlockPosition.i][futureBlockPosition.y].descending = true;
-}
-
-function play() {
-    spawnTetromino();
 }
 
 init();
