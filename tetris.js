@@ -12,7 +12,7 @@ const canvasHeight = gameCanvas.getAttribute("height");
 const blockSize = 35
 let centerX;
 
-const Blocks = {
+const Images = {
     Blue: new Image(),
     Green: new Image(),
     LightBlue: new Image(),
@@ -24,14 +24,14 @@ const Blocks = {
 
 const Tetrominos = [{
         name: 'I-Block',
-        image: Blocks.LightBlue,
+        image: Images.LightBlue,
         shape: [
             [1, 1, 1, 1]
         ]
     },
     {
         name: 'J-Block',
-        image: Blocks.Blue,
+        image: Images.Blue,
         shape: [
             [2, 0, 0, 0],
             [2, 2, 2, 2]
@@ -39,7 +39,7 @@ const Tetrominos = [{
     },
     {
         name: 'L-Block',
-        image: Blocks.Orange,
+        image: Images.Orange,
         shape: [
             [0, 0, 0, 3],
             [3, 3, 3, 3]
@@ -47,7 +47,7 @@ const Tetrominos = [{
     },
     {
         name: 'O-Block',
-        image: Blocks.Yellow,
+        image: Images.Yellow,
         shape: [
             [4, 4],
             [4, 4]
@@ -55,7 +55,7 @@ const Tetrominos = [{
     },
     {
         name: 'S-Block',
-        image: Blocks.Green,
+        image: Images.Green,
         shape: [
             [0, 5, 5],
             [5, 5, 0]
@@ -63,7 +63,7 @@ const Tetrominos = [{
     },
     {
         name: 'T-Block',
-        image: Blocks.Purple,
+        image: Images.Purple,
         shape: [
             [0, 6, 0],
             [6, 6, 6]
@@ -71,7 +71,7 @@ const Tetrominos = [{
     },
     {
         name: 'Z-Block',
-        image: Blocks.Red,
+        image: Images.Red,
         shape: [
             [7, 7, 0],
             [0, 7, 7]
@@ -87,7 +87,7 @@ function init() {
         for (let y = 0; y < canvasWidth / blockSize; y++) {
             row.push({
                 image: null,
-                active: false,
+                descending: false,
                 x: y * blockSize,
                 y: i * blockSize,
             });
@@ -128,13 +128,13 @@ function loadImage(img, src) {
 
 function loadImages() {
     return Promise.all([
-        loadImage(Blocks.Blue, "assets/Blue.png"),
-        loadImage(Blocks.Green, "assets/Green.png"),
-        loadImage(Blocks.LightBlue, "assets/LightBlue.png"),
-        loadImage(Blocks.Orange, "assets/Orange.png"),
-        loadImage(Blocks.Purple, "assets/Purple.png"),
-        loadImage(Blocks.Red, "assets/Red.png"),
-        loadImage(Blocks.Yellow, "assets/Yellow.png")
+        loadImage(Images.Blue, "assets/Blue.png"),
+        loadImage(Images.Green, "assets/Green.png"),
+        loadImage(Images.LightBlue, "assets/LightBlue.png"),
+        loadImage(Images.Orange, "assets/Orange.png"),
+        loadImage(Images.Purple, "assets/Purple.png"),
+        loadImage(Images.Red, "assets/Red.png"),
+        loadImage(Images.Yellow, "assets/Yellow.png")
     ]);
 }
 
@@ -153,7 +153,7 @@ function spawnTetromino() {
         let xLastSpawn = xSpawn;
         tetromino.shape[y].forEach(block => {
             if (block != 0) {
-                Playfield[y][xLastSpawn].active = true;
+                Playfield[y][xLastSpawn].descending = true;
                 Playfield[y][xLastSpawn].image = tetromino.image;
             }
             xLastSpawn++;
@@ -167,7 +167,7 @@ function refreshGrid() {
     let currentBlocksPositions = [];
     Playfield.forEach((line, i) => {
         line.forEach((block, y) => {
-            if (block.active == true) {
+            if (block.descending == true) {
                 currentBlocksPositions.push({
                     i: i,
                     y: y
@@ -211,11 +211,11 @@ function descendBlock(currentBlockPosition, futureBlockPosition) {
     let currentBlock = Playfield[currentBlockPosition.i][currentBlockPosition.y];
     ctx.clearRect(currentBlock.x, currentBlock.y, blockSize, blockSize);
     let tmpBlockImg = Playfield[currentBlockPosition.i][currentBlockPosition.y].image;
-    Playfield[currentBlockPosition.i][currentBlockPosition.y].active = false;
+    Playfield[currentBlockPosition.i][currentBlockPosition.y].descending = false;
     Playfield[currentBlockPosition.i][currentBlockPosition.y].image = null;
 
     Playfield[futureBlockPosition.i][futureBlockPosition.y].image = tmpBlockImg;
-    Playfield[futureBlockPosition.i][futureBlockPosition.y].active = true;
+    Playfield[futureBlockPosition.i][futureBlockPosition.y].descending = true;
 }
 
 function play() {
