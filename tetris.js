@@ -163,10 +163,10 @@ function spawnTetromino() {
         })
     }
 
-    update();
+    updateDescendingTetromino();
 }
 
-function update() {
+function updateDescendingTetromino() {
     let currentBlocksPositions = [];
     Playfield.forEach((line, i) => {
         line.forEach((block, y) => {
@@ -193,7 +193,7 @@ function update() {
         }
 
         if (canDescend) {
-            update();
+            updateDescendingTetromino();
         }
         else {
             currentBlocksPositions.forEach(currentBlockPosition => {
