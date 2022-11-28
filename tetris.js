@@ -214,7 +214,7 @@ function getFutureBlockPositions(currentBlocksPositions, direction) {
                 y: currentBlockPosition.y
             }
 
-            // stai uscendo fuori dal campo di gioco (in basso)?
+            // usciresti fuori dal campo di gioco (in basso)?
             let isGoingOutside = futurePosition.i > Playfield.length - 1;
             
             if(isGoingOutside) {
@@ -223,9 +223,9 @@ function getFutureBlockPositions(currentBlocksPositions, direction) {
 
             let futureBlock = getFutureBlockPositions(futurePosition);
 
-            // sei sopra un blocco?
+            // andresti sopra un altro blocco?
             let isColliding = futureBlock.image != null;
-            // è della tua figura?
+            // non è della tua figura?
             let isYourBlock = currentBlocksPositions.includes(currentBlockPosition);
 
             if (isColliding && !isYourBlock) {
