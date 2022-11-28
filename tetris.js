@@ -144,13 +144,7 @@ function drawBlock(block) {
     ctx.drawImage(block.image, block.x, block.y, blockSize, blockSize);
 }
 
-function spawnTetromino(currentBlocksPositions) {
-
-    if(currentBlocksPositions != undefined) {
-        currentBlocksPositions.forEach(currentBlockPosition => {
-            Playfield[currentBlockPosition.i][currentBlockPosition.y].descending = false;
-        })
-    }
+function spawnTetromino() {
 
     let tetromino = Tetrominos[Math.floor(Math.random() * Tetrominos.length)];
     //let tetromino = Tetrominos[3];
@@ -202,6 +196,9 @@ function refreshGrid() {
             refreshGrid();
         }
         else {
+            currentBlocksPositions.forEach(currentBlockPosition => {
+                getPlayfieldBlockByPosition(currentBlockPosition).descending = false;
+            })
             spawnTetromino(currentBlocksPositions);
         }
     }, 100);
@@ -211,15 +208,23 @@ function getFutureBlockPositions(currentBlocksPositions, direction) {
     let futureBlocksPositions = [];
     if (direction == Directions.DOWN) {
         currentBlocksPositions.every(currentBlockPosition => {
+
+            let futurePosition = {
+                i: currentBlockPosition.i + 1,
+                y: currentBlockPosition.y
+            }
+
             // stai uscendo fuori dal campo di gioco (in basso)?
-            let isGoingOutside = currentBlockPosition.i + 1 > Playfield.length - 1;
+            let isGoingOutside = futurePosition.i > Playfield.length - 1;
             
             if(isGoingOutside) {
                 return false;
             }
 
-            // tocchi un altro blocco?
-            let isColliding = Playfield[currentBlockPosition.i + 1][currentBlockPosition.y].image != null;
+            let futureBlock = getFutureBlockPositions(futurePosition);
+
+            // sei sopra un blocco?
+            let isColliding = futureBlock.image != null;
             // è della tua figura?
             let isYourBlock = currentBlocksPositions.includes(currentBlockPosition);
 
@@ -228,25 +233,27 @@ function getFutureBlockPositions(currentBlocksPositions, direction) {
                 futureBlocksPositions = [];
                 return false;
             }
-            futureBlocksPositions.push({
-                i: currentBlockPosition.i + 1,
-                y: currentBlockPosition.y
-            });
+            futureBlocksPositions.push(futurePosition);
             return true;
         });
     }
     return futureBlocksPositions;
 }
 
-function descendBlock(currentBlockPosition, futureBlockPosition) {
-    let currentBlock = Playfield[currentBlockPosition.i][currentBlockPosition.y];
-    ctx.clearRect(currentBlock.x, currentBlock.y, blockSize, blockSize);
-    let tmpBlockImg = Playfield[currentBlockPosition.i][currentBlockPosition.y].image;
-    Playfield[currentBlockPosition.i][currentBlockPosition.y].descending = false;
-    Playfield[currentBlockPosition.i][currentBlockPosition.y].image = null;
+function getPlayfieldBlockByPosition(position) {
+    return Playfield[position.i][position.y];
+}
 
-    Playfield[futureBlockPosition.i][futureBlockPosition.y].image = tmpBlockImg;
-    Playfield[futureBlockPosition.i][futureBlockPosition.y].descending = true;
+function descendBlock(currentBlockPosition, futureBlockPosition) {
+    let currentBlock = getPlayfieldBlockByPosition(currentBlockPosition);
+    ctx.clearRect(currentBlock.x, currentBlock.y, blockSize, blockSize);
+    let tmpBlockImg = currentBlock.image;
+    currentBlock.descending = false;
+    currentBlock.image = null;
+
+    let futureBlock = getPlayfieldBlockByPosition(futureBlockPosition);
+    futureBlock.image = tmpBlockImg;
+    futureBlock.descending = true;
 }
 
 init();
