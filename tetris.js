@@ -163,10 +163,10 @@ function spawnTetromino() {
         })
     }
 
-    refreshGrid();
+    update();
 }
 
-function refreshGrid() {
+function update() {
     let currentBlocksPositions = [];
     Playfield.forEach((line, i) => {
         line.forEach((block, y) => {
@@ -193,7 +193,7 @@ function refreshGrid() {
         }
 
         if (canDescend) {
-            refreshGrid();
+            update();
         }
         else {
             currentBlocksPositions.forEach(currentBlockPosition => {
