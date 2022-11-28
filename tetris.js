@@ -102,7 +102,7 @@ function init() {
     }
     centerX = Math.floor(Playfield[0].length / 2);
     drawGrid();
-    loadImages().then(spawnTetromino);
+    loadImages().then(() => spawnTetromino());
 }
 
 function drawGrid() {
@@ -144,7 +144,14 @@ function drawBlock(block) {
     ctx.drawImage(block.image, block.x, block.y, blockSize, blockSize);
 }
 
-function spawnTetromino() {
+function spawnTetromino(currentBlocksPositions) {
+
+    if(currentBlocksPositions != undefined) {
+        currentBlocksPositions.forEach(currentBlockPosition => {
+            Playfield[currentBlockPosition.i][currentBlockPosition.y].descending = false;
+        })
+    }
+
     let tetromino = Tetrominos[Math.floor(Math.random() * Tetrominos.length)];
     //let tetromino = Tetrominos[3];
     let length = tetromino.shape[0].length;
@@ -194,7 +201,9 @@ function refreshGrid() {
         if (canDescend) {
             refreshGrid();
         }
-        // else spawnTetromino();
+        else {
+            spawnTetromino(currentBlocksPositions);
+        }
     }, 100);
 }
 
@@ -202,10 +211,20 @@ function getFutureBlockPositions(currentBlocksPositions, direction) {
     let futureBlocksPositions = [];
     if (direction == Directions.DOWN) {
         currentBlocksPositions.every(currentBlockPosition => {
-            if (currentBlockPosition.i + 1 > Playfield.length - 1 || // se esci fuori campo di gioco (in basso)
-                (Playfield[currentBlockPosition.i + 1][currentBlockPosition.y].image != null && // o se tocchi un altro blocco
-                    !currentBlocksPositions.includes(currentBlockPosition)) // che non è della tua figura
-            ) {
+            // stai uscendo fuori dal campo di gioco (in basso)?
+            let isGoingOutside = currentBlockPosition.i + 1 > Playfield.length - 1;
+            
+            if(isGoingOutside) {
+                return false;
+            }
+
+            // tocchi un altro blocco?
+            let isColliding = Playfield[currentBlockPosition.i + 1][currentBlockPosition.y].image != null;
+            // è della tua figura?
+            let isYourBlock = currentBlocksPositions.includes(currentBlockPosition);
+
+            if (isColliding && !isYourBlock) {
+                console.log("AAAAAAAAAAAAAAAAAAAAAAAA")
                 return false;
             }
             futureBlocksPositions.push({
