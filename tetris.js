@@ -180,7 +180,8 @@ function refreshGrid() {
     activeBlocksPositions = activeBlocksPositions.reverse();
 
     setTimeout(() => {
-        let futureBlocks = [];
+
+        let futureBlocksPositions = [];
         let outOfBound = false;
         activeBlocksPositions.every(activeBlockPosition => {
             if(activeBlockPosition.i + 1 > Playfield.length - 1) {
@@ -188,34 +189,31 @@ function refreshGrid() {
                 outOfBound = true;
                 return false;
             }
-            let futureBlockPosition = {
-                i: activeBlockPosition.i + 1,
-                y: activeBlockPosition.y,
-                block: Playfield[activeBlockPosition.i][activeBlockPosition.y].block
-            };
-            console.log(futureBlockPosition)
-            futureBlocks.push(futureBlockPosition);
+            let futureBlockPosition = {i: activeBlockPosition.i + 1, y: activeBlockPosition.y};
+            futureBlocksPositions.push(futureBlockPosition);
             return true;
         })
         
-        futureBlocks.forEach(futureBlock => {
-            descendBlock(futureBlock);
-        })
+        // activeBlocksPositions
+        // futureBlocksPositions
+
+        for(let i = 0; i < futureBlocksPositions.length; i++) {
+            descendBlock(activeBlocksPositions[i], futureBlocksPositions[i]);
+        }
+
         refreshGrid();
     }, 1000);
 }
 
-function descendBlock(futureBlock) {
-    let block = Playfield[futureBlock.i][futureBlock.y];
-    ctx.clearRect(block.x, block.y, blockSize, blockSize);
+function descendBlock(currentBlockPosition, futureBlockPosition) {
+    let currentBlock = Playfield[currentBlockPosition.i][currentBlockPosition.y];
+    ctx.clearRect(currentBlock.x, currentBlock.y, blockSize, blockSize);
+    let tmpBlockImg = Playfield[currentBlockPosition.i][currentBlockPosition.y].block;
+    Playfield[currentBlockPosition.i][currentBlockPosition.y].active = false;
+    Playfield[currentBlockPosition.i][currentBlockPosition.y].block = null;
 
-    //let tmpBlock = Playfield[futureBlock.i][futureBlock.y].block
-    Playfield[futureBlock.i][futureBlock.y].active = false;
-    Playfield[futureBlock.i][futureBlock.y].block = null;
-
-    //Playfield[futureBlock.i+1][futureBlock.y].block = tmpBlock;
-    Playfield[futureBlock.i+1][futureBlock.y].active = true;
-    Playfield[futureBlock.i+1][futureBlock.y].block = futureBlock.block;
+    Playfield[futureBlockPosition.i][futureBlockPosition.y].block = tmpBlockImg;
+    Playfield[futureBlockPosition.i][futureBlockPosition.y].active = true;
 }
 
 function play() {
