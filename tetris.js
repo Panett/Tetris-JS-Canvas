@@ -246,12 +246,12 @@ function getPlayfieldBlockByPosition(position) {
 
 function descendBlock(currentBlockPosition, futureBlockPosition) {
     let currentBlock = getPlayfieldBlockByPosition(currentBlockPosition);
-    ctx.clearRect(currentBlock.x, currentBlock.y, blockSize, blockSize);
     let tmpBlockImg = currentBlock.image;
     currentBlock.descending = false;
     currentBlock.image = null;
 
     let futureBlock = getPlayfieldBlockByPosition(futureBlockPosition);
+    ctx.clearRect(currentBlock.x, currentBlock.y, blockSize, blockSize);
     futureBlock.image = tmpBlockImg;
     futureBlock.descending = true;
 }
