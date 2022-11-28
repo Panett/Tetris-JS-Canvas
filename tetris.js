@@ -164,11 +164,11 @@ function spawnTetromino() {
 }
 
 function refreshGrid() {
-    let activeBlocksPositions = [];
+    let currentBlocksPositions = [];
     Playfield.forEach((line, i) => {
         line.forEach((block, y) => {
             if (block.active == true) {
-                activeBlocksPositions.push({
+                currentBlocksPositions.push({
                     i: i,
                     y: y
                 });
@@ -177,35 +177,33 @@ function refreshGrid() {
         });
     });
 
-    activeBlocksPositions = activeBlocksPositions.reverse();
+    currentBlocksPositions = currentBlocksPositions.reverse();
 
     setTimeout(() => {
 
         let futureBlocksPositions = [];
-        activeBlocksPositions.every(activeBlockPosition => {
-            if (activeBlockPosition.i + 1 > Playfield.length - 1 // se esci fuori campo di gioco
-                || (Playfield[activeBlockPosition.i + 1][activeBlockPosition.y].image != null // o se tocchi un altro blocco
-                    && !activeBlocksPositions.includes(activeBlockPosition)) // che non è della tua figura
+        let canDescend = currentBlocksPositions.every(currentBlockPosition => {
+            if (currentBlockPosition.i + 1 > Playfield.length - 1 // se esci fuori campo di gioco
+                || (Playfield[currentBlockPosition.i + 1][currentBlockPosition.y].image != null // o se tocchi un altro blocco
+                    && !currentBlocksPositions.includes(currentBlockPosition)) // che non è della tua figura
             ) {
-                console.log("HO PRESO ER PALO");
-                futureBlocksPositions = [];
                 return false;
             }
             futureBlocksPositions.push({
-                i: activeBlockPosition.i + 1,
-                y: activeBlockPosition.y
+                i: currentBlockPosition.i + 1,
+                y: currentBlockPosition.y
             });
             return true;
         });
 
-        // activeBlocksPositions
-        // futureBlocksPositions
+        console.log("canDescend:", canDescend, "futureBlocksPositions:", futureBlocksPositions);
 
         for (let i = 0; i < futureBlocksPositions.length; i++) {
-            descendBlock(activeBlocksPositions[i], futureBlocksPositions[i]);
+            descendBlock(currentBlocksPositions[i], futureBlocksPositions[i]);
         }
 
-        refreshGrid();
+        if(canDescend) refreshGrid();
+        // else spawnTetromino();
     }, 100);
 }
 
