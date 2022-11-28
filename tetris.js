@@ -225,6 +225,7 @@ function getFutureBlockPositions(currentBlocksPositions, direction) {
 
             if (isColliding && !isYourBlock) {
                 console.log("AAAAAAAAAAAAAAAAAAAAAAAA")
+                futureBlocksPositions = [];
                 return false;
             }
             futureBlocksPositions.push({
