@@ -146,8 +146,8 @@ function drawBlock(block) {
 
 function spawnTetromino() {
 
-    //let tetromino = Tetrominos[Math.floor(Math.random() * Tetrominos.length)];
-    let tetromino = Tetrominos[3];
+    let tetromino = Tetrominos[Math.floor(Math.random() * Tetrominos.length)];
+    //let tetromino = Tetrominos[3];
     let length = tetromino.shape[0].length;
     let halfLength = Math.floor(length / 2) + length % 2;
     let xSpawn = centerX - halfLength;
