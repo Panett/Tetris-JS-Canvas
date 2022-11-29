@@ -146,8 +146,8 @@ function drawBlock(block) {
 
 function spawnTetromino() {
 
-    let tetromino = Tetrominos[Math.floor(Math.random() * Tetrominos.length)];
-    //let tetromino = Tetrominos[3];
+    //let tetromino = Tetrominos[Math.floor(Math.random() * Tetrominos.length)];
+    let tetromino = Tetrominos[3];
     let length = tetromino.shape[0].length;
     let halfLength = Math.floor(length / 2) + length % 2;
     let xSpawn = centerX - halfLength;
@@ -186,7 +186,7 @@ function updateDescendingTetromino() {
 
         let futureBlocksPositions = getFutureBlockPositions(currentBlocksPositions, Directions.DOWN);
         let canDescend = futureBlocksPositions.length > 0 ? true : false;
-        console.log("canDescend:", canDescend, "futureBlocksPositions:", futureBlocksPositions);
+        //console.log("canDescend:", canDescend, "futureBlocksPositions:", futureBlocksPositions);
 
         for (let i = 0; i < futureBlocksPositions.length; i++) {
             descendBlock(currentBlocksPositions[i], futureBlocksPositions[i]);
@@ -221,15 +221,16 @@ function getFutureBlockPositions(currentBlocksPositions, direction) {
                 return false;
             }
 
-            let futureBlock = getFutureBlockPositions(futurePosition);
+            let futureBlock = getPlayfieldBlockByPosition(futurePosition);
 
             // andresti sopra un altro blocco?
             let isColliding = futureBlock.image != null;
-            // non è della tua figura?
-            let isYourBlock = currentBlocksPositions.includes(currentBlockPosition);
+            // è della tua figura?
+            let isYourBlock = currentBlocksPositions.includes(futurePosition);
+
+            //console.log(isYourBlock)
 
             if (isColliding && !isYourBlock) {
-                console.log("AAAAAAAAAAAAAAAAAAAAAAAA")
                 futureBlocksPositions = [];
                 return false;
             }

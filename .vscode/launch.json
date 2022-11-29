@@ -8,7 +8,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",
-            "url": "file:///C:/Users/loren/Desktop/aaa/Tetris-JS-Canvas/tetris.html",
+            "url": "file:///C:/Users/loren/Desktop/GitHub%20Repo/Tetris-JS-Canvas/tetris.html",
             "webRoot": "${workspaceFolder}"
         }
     ]
