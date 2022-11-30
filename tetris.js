@@ -202,14 +202,10 @@ function getFutureBlockPositions(currentBlocksPositions, direction) {
                 return false;
             }
 
-            let futureBlock = getPlayfieldBlockByPosition(futurePosition);
-
             // andresti sopra un altro blocco?
-            let isColliding = futureBlock.image != null;
+            let isColliding = getPlayfieldBlockByPosition(futurePosition).image != null;
             // è della tua figura?
             let isYourBlock = currentBlocksPositions.includes(futurePosition);
-
-            //console.log(isYourBlock)
 
             if (isColliding && !isYourBlock) {
                 futureBlocksPositions = [];
