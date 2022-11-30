@@ -12,6 +12,14 @@ const canvasHeight = gameCanvas.getAttribute("height");
 const blockSize = 35
 let centerX;
 
+class Tetromino { 
+    constructor(name, image, shape) {
+        this.name = name;
+        this.image = image;
+        this.shape = shape;
+    }
+}
+
 const Images = {
     Blue: new Image(),
     Green: new Image(),
@@ -22,62 +30,35 @@ const Images = {
     Yellow: new Image()
 };
 
-const Tetrominos = [{
-        name: 'I-Block',
-        image: Images.LightBlue,
-        shape: [
-            [1, 1, 1, 1]
-        ]
-    },
-    {
-        name: 'J-Block',
-        image: Images.Blue,
-        shape: [
-            [2, 0, 0, 0],
-            [2, 2, 2, 2]
-        ]
-    },
-    {
-        name: 'L-Block',
-        image: Images.Orange,
-        shape: [
-            [0, 0, 0, 3],
-            [3, 3, 3, 3]
-        ]
-    },
-    {
-        name: 'O-Block',
-        image: Images.Yellow,
-        shape: [
-            [4, 4],
-            [4, 4]
-        ]
-    },
-    {
-        name: 'S-Block',
-        image: Images.Green,
-        shape: [
-            [0, 5, 5],
-            [5, 5, 0]
-        ]
-    },
-    {
-        name: 'T-Block',
-        image: Images.Purple,
-        shape: [
-            [0, 6, 0],
-            [6, 6, 6]
-        ]
-    },
-    {
-        name: 'Z-Block',
-        image: Images.Red,
-        shape: [
-            [7, 7, 0],
-            [0, 7, 7]
-        ]
-    }
-];
+const Tetrominos = [
+    new Tetromino('I-Block', Images.LightBlue, [
+        [1, 1, 1, 1]
+    ]),
+    new Tetromino('J-Block', Images.Blue, [
+        [1, 0, 0, 0],
+        [1, 1, 1, 1]
+    ]),
+    new Tetromino('L-Block', Images.Orange, [
+        [0, 0, 0, 1],
+        [1, 1, 1, 1]
+    ]),
+    new Tetromino('O-Block', Images.Yellow, [
+        [1, 1],
+        [1, 1]
+    ]),
+    new Tetromino('S-Block', Images.Green, [
+        [0, 1, 1],
+        [1, 1, 0]
+    ]),
+    new Tetromino('T-Block', Images.Purple, [
+        [0, 1, 0],
+        [1, 1, 1]
+    ]),
+    new Tetromino('Z-Block', Images.Red, [
+        [1, 1, 0],
+        [0, 1, 1]
+    ])
+]
 
 let Playfield = [];
 
