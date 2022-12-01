@@ -76,6 +76,15 @@ class Playfield {
         this._centerX = null;
         this.init();
     }
+    get blockSize() {
+        return this._blockSize;
+    }
+    get blocks() {
+        return this._blocks;
+    }
+    get centerX() {
+        return this._centerX;
+    }
     init() {
         for (let i = 0; i < canvasHeight / this._blockSize; i++) {
             let row = [];
@@ -95,14 +104,16 @@ class Playfield {
     addRow(row) {
         this._blocks.push(row);
     }
-    get blockSize() {
-        return this._blockSize;
-    }
-    get blocks() {
-        return this._blocks;
-    }
-    get centerX() {
-        return this._centerX;
+    descend(fromPosition, toPosition) {
+        let fromBlock = this.getBlock(fromPosition);
+        let tmpBlockImg = fromBlock.image;
+        fromBlock.descending = false;
+        fromBlock.image = null;
+
+        let toBlock = this.getBlock(toPosition);
+        ctx.clearRect(fromBlock.x, fromBlock.y, this._blockSize, this._blockSize);
+        toBlock.image = tmpBlockImg;
+        toBlock.descending = true;
     }
 }
 
@@ -241,7 +252,7 @@ function updateDescendingTetromino() {
         //console.log("canDescend:", canDescend, "futureBlocksPositions:", futureBlocksPositions);
 
         for (let i = 0; i < futureBlocksPositions.length; i++) {
-            descendBlock(currentBlocksPositions[i], futureBlocksPositions[i]);
+            playfield.descend(currentBlocksPositions[i], futureBlocksPositions[i]);
         }
 
         if (canDescend) {
@@ -286,18 +297,6 @@ function getFutureBlockPositions(currentBlocksPositions, direction) {
         });
     }
     return futureBlocksPositions;
-}
-
-function descendBlock(currentBlockPosition, futureBlockPosition) {
-    let currentBlock = playfield.getBlock(currentBlockPosition);
-    let tmpBlockImg = currentBlock.image;
-    currentBlock.descending = false;
-    currentBlock.image = null;
-
-    let futureBlock = playfield.getBlock(futureBlockPosition);
-    ctx.clearRect(currentBlock.x, currentBlock.y, playfield.blockSize, playfield.blockSize);
-    futureBlock.image = tmpBlockImg;
-    futureBlock.descending = true;
 }
 
 init();
