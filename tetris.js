@@ -1,3 +1,5 @@
+"use strict";
+
 /** @type {HTMLCanvasElement} */
 const gridCanvas = document.getElementById("gridCanvas");
 
@@ -9,18 +11,102 @@ const ctx = gameCanvas.getContext("2d");
 
 const canvasWidth = gameCanvas.getAttribute("width");
 const canvasHeight = gameCanvas.getAttribute("height");
-const blockSize = 35
-let centerX;
 
 class Tetromino { 
     constructor(name, image, shape) {
-        this.name = name;
-        this.image = image;
-        this.shape = shape;
+        this._name = name;
+        this._image = image;
+        this._shape = shape;
+    }
+    get name() {
+        return this._name;
+    }
+    get image() {
+        return this._image;
+    }
+    get shape() {
+        return this._shape;
     }
 }
 
-const Images = {
+class PlayfieldPosition {
+    constructor(i, y) {
+        this._i = i;
+        this._y = y;
+    }
+    get i() {
+        return this._i;
+    }
+    get y() {
+        return this._y;
+    }
+}
+
+class Block {
+    constructor(image, descending, x, y) {
+        this._image = image;
+        this._descending = descending;
+        this._x = x;
+        this._y = y;
+    }
+    get image() {
+        return this._image;
+    }
+    get descending() {
+        return this._descending;
+    }
+    get x() {
+        return this._x;
+    }
+    get y() {
+        return this._y;
+    }
+    set image(value) {
+        this._image = value;
+    }
+    set descending(value) {
+        this._descending = value;
+    }
+}
+
+class Playfield {
+    constructor(blockSize) {
+        this._blockSize = blockSize;
+        this._blocks = [];
+        this._centerX = null;
+        this.init();
+    }
+    init() {
+        for (let i = 0; i < canvasHeight / this._blockSize; i++) {
+            let row = [];
+            for (let y = 0; y < canvasWidth / this._blockSize; y++) {
+                row.push(new Block(null, false, y*this._blockSize, i*this._blockSize));
+            }
+            this.addRow(row);
+        }
+        this._centerX = Math.floor(this.getRow(0).length / 2);
+    }
+    getBlock(position) {
+        return this._blocks[position.i][position.y];
+    }
+    getRow(i) {
+        return this._blocks[i];
+    }
+    addRow(row) {
+        this._blocks.push(row);
+    }
+    get blockSize() {
+        return this._blockSize;
+    }
+    get blocks() {
+        return this._blocks;
+    }
+    get centerX() {
+        return this._centerX;
+    }
+}
+
+const images = {
     Blue: new Image(),
     Green: new Image(),
     LightBlue: new Image(),
@@ -30,58 +116,45 @@ const Images = {
     Yellow: new Image()
 };
 
-const Tetrominos = [
-    new Tetromino('I-Block', Images.LightBlue, [
+const tetrominoList = [
+    new Tetromino('I-Block', images.LightBlue, [
         [1, 1, 1, 1]
     ]),
-    new Tetromino('J-Block', Images.Blue, [
+    new Tetromino('J-Block', images.Blue, [
         [1, 0, 0, 0],
         [1, 1, 1, 1]
     ]),
-    new Tetromino('L-Block', Images.Orange, [
+    new Tetromino('L-Block', images.Orange, [
         [0, 0, 0, 1],
         [1, 1, 1, 1]
     ]),
-    new Tetromino('O-Block', Images.Yellow, [
+    new Tetromino('O-Block', images.Yellow, [
         [1, 1],
         [1, 1]
     ]),
-    new Tetromino('S-Block', Images.Green, [
+    new Tetromino('S-Block', images.Green, [
         [0, 1, 1],
         [1, 1, 0]
     ]),
-    new Tetromino('T-Block', Images.Purple, [
+    new Tetromino('T-Block', images.Purple, [
         [0, 1, 0],
         [1, 1, 1]
     ]),
-    new Tetromino('Z-Block', Images.Red, [
+    new Tetromino('Z-Block', images.Red, [
         [1, 1, 0],
         [0, 1, 1]
     ])
 ]
 
-let Playfield = [];
+const playfield = new Playfield(35);
 
-const Directions = {
+const directions = {
     DOWN: "DOWN",
     RIGHT: "RIGHT",
     LEFT: "LEFT"
 };
 
 function init() {
-    for (let i = 0; i < canvasHeight / blockSize; i++) {
-        let row = [];
-        for (let y = 0; y < canvasWidth / blockSize; y++) {
-            row.push({
-                image: null,
-                descending: false,
-                x: y * blockSize,
-                y: i * blockSize,
-            });
-        }
-        Playfield.push(row);
-    }
-    centerX = Math.floor(Playfield[0].length / 2);
     drawGrid();
     loadImages().then(() => spawnTetromino());
 }
@@ -91,11 +164,11 @@ function drawGrid() {
     gctx.lineWidth = 3.3;
     gctx.fillStyle = "#a29bfe";
     gctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    for (let x = 0; x <= canvasWidth; x += blockSize) {
+    for (let x = 0; x <= canvasWidth; x += playfield.blockSize) {
         gctx.moveTo(x, 0);
         gctx.lineTo(x, canvasHeight);
     }
-    for (let y = 0; y <= canvasHeight; y += blockSize) {
+    for (let y = 0; y <= canvasHeight; y += playfield.blockSize) {
         gctx.moveTo(0, y);
         gctx.lineTo(canvasWidth, y);
     }
@@ -111,34 +184,35 @@ function loadImage(img, src) {
 
 function loadImages() {
     return Promise.all([
-        loadImage(Images.Blue, "assets/Blue.png"),
-        loadImage(Images.Green, "assets/Green.png"),
-        loadImage(Images.LightBlue, "assets/LightBlue.png"),
-        loadImage(Images.Orange, "assets/Orange.png"),
-        loadImage(Images.Purple, "assets/Purple.png"),
-        loadImage(Images.Red, "assets/Red.png"),
-        loadImage(Images.Yellow, "assets/Yellow.png")
+        loadImage(images.Blue, "assets/Blue.png"),
+        loadImage(images.Green, "assets/Green.png"),
+        loadImage(images.LightBlue, "assets/LightBlue.png"),
+        loadImage(images.Orange, "assets/Orange.png"),
+        loadImage(images.Purple, "assets/Purple.png"),
+        loadImage(images.Red, "assets/Red.png"),
+        loadImage(images.Yellow, "assets/Yellow.png")
     ]);
 }
 
 function drawBlock(block) {
-    ctx.drawImage(block.image, block.x, block.y, blockSize, blockSize);
+    ctx.drawImage(block.image, block.x, block.y, playfield.blockSize, playfield.blockSize);
 }
 
 function spawnTetromino() {
 
-    let tetromino = Tetrominos[Math.floor(Math.random() * Tetrominos.length)];
-    //let tetromino = Tetrominos[3];
+    let tetromino = tetrominoList[Math.floor(Math.random() * tetrominoList.length)];
+    //let tetromino = tetrominoList[3];
     let length = tetromino.shape[0].length;
     let halfLength = Math.floor(length / 2) + length % 2;
-    let xSpawn = centerX - halfLength;
+    let xSpawn = playfield.centerX - halfLength;
 
     for (let y = 0; y < tetromino.shape.length; y++) {
         let xLastSpawn = xSpawn;
-        tetromino.shape[y].forEach(block => {
-            if (block != 0) {
-                Playfield[y][xLastSpawn].descending = true;
-                Playfield[y][xLastSpawn].image = tetromino.image;
+        tetromino.shape[y].forEach(tetrominoBlock => {
+            if (tetrominoBlock === 1) {
+                let block = playfield.getBlock(new PlayfieldPosition(y, xLastSpawn));
+                block.descending = true;
+                block.image = tetromino.image;
             }
             xLastSpawn++;
         })
@@ -149,13 +223,10 @@ function spawnTetromino() {
 
 function updateDescendingTetromino() {
     let currentBlocksPositions = [];
-    Playfield.forEach((line, i) => {
-        line.forEach((block, y) => {
-            if (block.descending == true) {
-                currentBlocksPositions.push({
-                    i: i,
-                    y: y
-                });
+    playfield.blocks.forEach((row, i) => {
+        row.forEach((block, y) => {
+            if (block.descending) {
+                currentBlocksPositions.push(new PlayfieldPosition(i, y));
                 drawBlock(block);
             }
         });
@@ -165,8 +236,8 @@ function updateDescendingTetromino() {
 
     setTimeout(() => {
 
-        let futureBlocksPositions = getFutureBlockPositions(currentBlocksPositions, Directions.DOWN);
-        let canDescend = futureBlocksPositions.length > 0 ? true : false;
+        let futureBlocksPositions = getFutureBlockPositions(currentBlocksPositions, directions.DOWN);
+        let canDescend = futureBlocksPositions.length > 0;
         //console.log("canDescend:", canDescend, "futureBlocksPositions:", futureBlocksPositions);
 
         for (let i = 0; i < futureBlocksPositions.length; i++) {
@@ -178,7 +249,7 @@ function updateDescendingTetromino() {
         }
         else {
             currentBlocksPositions.forEach(currentBlockPosition => {
-                getPlayfieldBlockByPosition(currentBlockPosition).descending = false;
+                playfield.getBlock(currentBlockPosition).descending = false;
             })
             spawnTetromino(currentBlocksPositions);
         }
@@ -187,25 +258,24 @@ function updateDescendingTetromino() {
 
 function getFutureBlockPositions(currentBlocksPositions, direction) {
     let futureBlocksPositions = [];
-    if (direction == Directions.DOWN) {
+    if (direction === directions.DOWN) {
         currentBlocksPositions.every(currentBlockPosition => {
 
-            let futurePosition = {
-                i: currentBlockPosition.i + 1,
-                y: currentBlockPosition.y
-            }
+            let futurePosition = new PlayfieldPosition(currentBlockPosition.i + 1, currentBlockPosition.y);
 
             // usciresti fuori dal campo di gioco (in basso)?
-            let isGoingOutside = futurePosition.i > Playfield.length - 1;
-            
+            let isGoingOutside = futurePosition.i > playfield.blocks.length - 1;
+
             if(isGoingOutside) {
                 return false;
             }
 
             // andresti sopra un altro blocco?
-            let isColliding = getPlayfieldBlockByPosition(futurePosition).image != null;
+            let isColliding = playfield.getBlock(futurePosition).image != null;
             // è della tua figura?
             let isYourBlock = currentBlocksPositions.includes(futurePosition);
+
+            isYourBlock = true;
 
             if (isColliding && !isYourBlock) {
                 futureBlocksPositions = [];
@@ -218,18 +288,14 @@ function getFutureBlockPositions(currentBlocksPositions, direction) {
     return futureBlocksPositions;
 }
 
-function getPlayfieldBlockByPosition(position) {
-    return Playfield[position.i][position.y];
-}
-
 function descendBlock(currentBlockPosition, futureBlockPosition) {
-    let currentBlock = getPlayfieldBlockByPosition(currentBlockPosition);
+    let currentBlock = playfield.getBlock(currentBlockPosition);
     let tmpBlockImg = currentBlock.image;
     currentBlock.descending = false;
     currentBlock.image = null;
 
-    let futureBlock = getPlayfieldBlockByPosition(futureBlockPosition);
-    ctx.clearRect(currentBlock.x, currentBlock.y, blockSize, blockSize);
+    let futureBlock = playfield.getBlock(futureBlockPosition);
+    ctx.clearRect(currentBlock.x, currentBlock.y, playfield.blockSize, playfield.blockSize);
     futureBlock.image = tmpBlockImg;
     futureBlock.descending = true;
 }
