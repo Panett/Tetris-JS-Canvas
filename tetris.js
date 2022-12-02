@@ -157,13 +157,13 @@ const tetrominoList = [
     ])
 ]
 
-const playfield = new Playfield(35);
-
 const directions = {
     DOWN: "DOWN",
     RIGHT: "RIGHT",
     LEFT: "LEFT"
 };
+
+const playfield = new Playfield(35);
 
 function init() {
     drawGrid();
@@ -210,6 +210,8 @@ function drawBlock(block) {
 }
 
 function spawnTetromino() {
+
+    //TODO: check if the tetromino is spawnable
 
     let tetromino = tetrominoList[Math.floor(Math.random() * tetrominoList.length)];
     //let tetromino = tetrominoList[3];
@@ -262,7 +264,7 @@ function updateDescendingTetromino() {
             currentBlocksPositions.forEach(currentBlockPosition => {
                 playfield.getBlock(currentBlockPosition).descending = false;
             })
-            spawnTetromino(currentBlocksPositions);
+            spawnTetromino();
         }
     }, 100);
 }
@@ -281,14 +283,13 @@ function getFutureBlockPositions(currentBlocksPositions, direction) {
                 return false;
             }
 
-            // andresti sopra un altro blocco?
-            let isColliding = playfield.getBlock(futurePosition).image != null;
-            // è della tua figura?
-            let isYourBlock = currentBlocksPositions.includes(futurePosition);
+            // andresti sopra un altro blocco non attivo?
+            let isColliding = playfield.getBlock(futurePosition).image != null
+                && playfield.getBlock(futurePosition).descending === false;
 
-            isYourBlock = true;
+            isColliding = false;
 
-            if (isColliding && !isYourBlock) {
+            if (isColliding) {
                 futureBlocksPositions = [];
                 return false;
             }
