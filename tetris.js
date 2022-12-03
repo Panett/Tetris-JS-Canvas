@@ -42,6 +42,11 @@ class PlayfieldPosition {
     }
 }
 
+class NextTetrominoPositions {
+    positions;
+    _isPermitted;
+}
+
 class Block {
     constructor(image, descending, x, y) {
         this._image = image;
@@ -160,7 +165,8 @@ const tetrominoList = [
 const directions = {
     DOWN: "DOWN",
     RIGHT: "RIGHT",
-    LEFT: "LEFT"
+    LEFT: "LEFT",
+    SPAWN: "SPAWN"
 };
 
 const playfield = new Playfield(35);
@@ -211,27 +217,33 @@ function drawBlock(block) {
 
 function spawnTetromino() {
 
-    //TODO: check if the tetromino is spawnable
-
     let tetromino = tetrominoList[Math.floor(Math.random() * tetrominoList.length)];
     //let tetromino = tetrominoList[3];
     let length = tetromino.shape[0].length;
     let halfLength = Math.floor(length / 2) + length % 2;
     let xSpawn = playfield.centerX - halfLength;
 
+    let spawnPositions = [];
     for (let y = 0; y < tetromino.shape.length; y++) {
         let xLastSpawn = xSpawn;
         tetromino.shape[y].forEach(tetrominoBlock => {
             if (tetrominoBlock === 1) {
-                let block = playfield.getBlock(new PlayfieldPosition(y, xLastSpawn));
-                block.descending = true;
-                block.image = tetromino.image;
+                spawnPositions.push(new PlayfieldPosition(y, xLastSpawn));
             }
             xLastSpawn++;
         })
     }
 
-    updateDescendingTetromino();
+    if(getNextBlockPositions(spawnPositions, directions.SPAWN).length > 0) {
+        spawnPositions.forEach(spawnPositions => {
+            let block = playfield.getBlock(new PlayfieldPosition(spawnPositions.i, spawnPositions.y));
+            block.descending = true;
+            block.image = tetromino.image;
+        })
+        updateDescendingTetromino();
+    } else {
+        console.log("HAI PERSO!")
+    }
 }
 
 function updateDescendingTetromino() {
@@ -249,7 +261,7 @@ function updateDescendingTetromino() {
 
     setTimeout(() => {
 
-        let futureBlocksPositions = getFutureBlockPositions(currentBlocksPositions, directions.DOWN);
+        let futureBlocksPositions = getNextBlockPositions(currentBlocksPositions, directions.DOWN);
         let canDescend = futureBlocksPositions.length > 0;
         //console.log("canDescend:", canDescend, "futureBlocksPositions:", futureBlocksPositions);
 
@@ -269,35 +281,47 @@ function updateDescendingTetromino() {
     }, 100);
 }
 
-function getFutureBlockPositions(currentBlocksPositions, direction) {
+function getNextBlockPositions(currentBlocksPositions, direction) {
+
+    let nextTetrominoPositions = new NextTetrominoPositions();
+
     let futureBlocksPositions = [];
-    if (direction === directions.DOWN) {
-        currentBlocksPositions.every(currentBlockPosition => {
 
-            let futurePosition = new PlayfieldPosition(currentBlockPosition.i + 1, currentBlockPosition.y);
+    currentBlocksPositions.every(currentBlockPosition => {
+        let futurePosition;
 
-            // usciresti fuori dal campo di gioco (in basso)?
-            let isGoingOutside = futurePosition.i > playfield.blocks.length - 1;
+        if(direction === directions.DOWN) {
+            futurePosition = new PlayfieldPosition(currentBlockPosition.i + 1, currentBlockPosition.y);
+        } else if(direction === directions.LEFT) {
+            futurePosition = new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y - 1);
+        } else if(direction === directions.RIGHT) {
+            futurePosition = new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y + 1);
+        } else if(direction === directions.SPAWN) {
+            futurePosition = currentBlockPosition;
+        } else {
+            return false;
+        }
 
-            if(isGoingOutside) {
-                return false;
-            }
+        if(isPositionOutside(futurePosition) || isPositionAlreadyOccupied(futurePosition)) {
+            futureBlocksPositions = [];
+            return false;
+        }
+        futureBlocksPositions.push(futurePosition);
+        return true;
+    });
 
-            // andresti sopra un altro blocco non attivo?
-            let isColliding = playfield.getBlock(futurePosition).image != null
-                && playfield.getBlock(futurePosition).descending === false;
-
-            isColliding = false;
-
-            if (isColliding) {
-                futureBlocksPositions = [];
-                return false;
-            }
-            futureBlocksPositions.push(futurePosition);
-            return true;
-        });
-    }
     return futureBlocksPositions;
+}
+
+function isPositionOutside(futurePosition) {
+    return futurePosition.i > playfield.blocks.length - 1
+        || futurePosition.y > playfield.blocks[0].length
+        || futurePosition.y < 0;
+}
+
+function isPositionAlreadyOccupied(futurePosition) {
+    let block = playfield.getBlock(futurePosition);
+    return block.image != null && block.descending === false;
 }
 
 init();
