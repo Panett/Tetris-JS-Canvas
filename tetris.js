@@ -45,6 +45,7 @@ class PlayfieldPosition {
 class NextTetrominoPositions {
     positions = [];
     permitted = true;
+    ignore = false;
 }
 
 class Block {
@@ -164,18 +165,21 @@ const playfield = new Playfield(35);
 let currentBlocksPositions = [];
 
 let descendInterval;
+let gameOver = false;
 
 function init() {
     drawGrid();
     document.addEventListener('keydown', function(event) {
-        if(event.code == 'KeyS') {
-            move(directions.DOWN);
-        } else if(event.code == 'KeyA') {
-            move(directions.LEFT);
-        } else if(event.code == 'KeyD') {
-            move(directions.RIGHT);
-        } else if(event.code == 'Space') {
-            move(directions.GROUND);
+        if(!gameOver) {
+            if(event.code == 'KeyS') {
+                move(directions.DOWN);
+            } else if(event.code == 'KeyA') {
+                move(directions.LEFT);
+            } else if(event.code == 'KeyD') {
+                move(directions.RIGHT);
+            } else if(event.code == 'Space') {
+                move(directions.GROUND);
+            }
         }
     });
     loadImages().then(() => play());
@@ -199,6 +203,8 @@ function move(direction) {
             toBlock.descending = true;
         }
         drawDescendingBlocks();
+    } else if(nextTetrominoPositions.ignore) {
+        //DO NOTHING
     } else {
         currentBlocksPositions.forEach(currentBlockPosition => {
             playfield.getBlock(currentBlockPosition).descending = false;
@@ -276,6 +282,7 @@ function spawnTetromino() {
         return true;
     } else {
         clearInterval(descendInterval);
+        gameOver = true;
         console.log("HAI PERSO");
         return false;
     }
@@ -305,8 +312,10 @@ function getNextBlockPositions(currentBlocksPositions, direction) {
             futurePosition = new PlayfieldPosition(currentBlockPosition.i + 1, currentBlockPosition.y);
         } else if(direction === directions.LEFT) {
             futurePosition = new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y - 1);
+            nextTetrominoPositions.ignore = true;
         } else if(direction === directions.RIGHT) {
             futurePosition = new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y + 1);
+            nextTetrominoPositions.ignore = true;
         } else if (direction === directions.GROUND) {
             // TODO
         } else if(direction === directions.SPAWN) {
