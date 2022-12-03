@@ -109,17 +109,6 @@ class Playfield {
     addRow(row) {
         this._blocks.push(row);
     }
-    descendBlock(fromPosition, toPosition) {
-        let fromBlock = this.getBlock(fromPosition);
-        let tmpBlockImg = fromBlock.image;
-        fromBlock.descending = false;
-        fromBlock.image = null;
-
-        let toBlock = this.getBlock(toPosition);
-        ctx.clearRect(fromBlock.x, fromBlock.y, this._blockSize, this._blockSize);
-        toBlock.image = tmpBlockImg;
-        toBlock.descending = true;
-    }
 }
 
 const images = {
@@ -174,6 +163,8 @@ const playfield = new Playfield(35);
 
 let currentBlocksPositions = [];
 
+let descendInterval;
+
 function init() {
     drawGrid();
     document.addEventListener('keydown', function(event) {
@@ -187,15 +178,33 @@ function init() {
             move(directions.GROUND);
         }
     });
-    loadImages().then(() => spawnTetromino());
+    loadImages().then(() => play());
 }
 
 function move(direction) {
-    let nextBlockPositions = getNextBlockPositions(currentBlocksPositions, direction);
-    let canMove = nextBlockPositions.length > 0;
-    if(canMove) {
-        console.log(direction);
-        //TODO
+    let futureBlocksPositions = getNextBlockPositions(currentBlocksPositions, direction);
+    let canDescend = futureBlocksPositions.length > 0;
+    if(canDescend) {
+        // MOVE BLOCKS IN THE PLAYFIELD
+        // REMOVE OLD BLOCKS FROM THE CANVAS
+        for (let i = 0; i < futureBlocksPositions.length; i++) {
+            // FROM
+            let fromBlock = playfield.getBlock(currentBlocksPositions[i]);
+            let img = fromBlock.image;
+            fromBlock.descending = false;
+            fromBlock.image = null;
+            // TO
+            let toBlock = playfield.getBlock(futureBlocksPositions[i]);
+            ctx.clearRect(fromBlock.x, fromBlock.y, playfield.blockSize, playfield.blockSize);
+            toBlock.image = img;
+            toBlock.descending = true;
+        }
+        drawDescendingBlocks();
+    } else {
+        currentBlocksPositions.forEach(currentBlockPosition => {
+            playfield.getBlock(currentBlockPosition).descending = false;
+        })
+        spawnTetromino();
     }
 }
 
@@ -240,8 +249,8 @@ function drawBlock(block) {
 
 function spawnTetromino() {
 
-    let tetromino = tetrominoList[Math.floor(Math.random() * tetrominoList.length)];
-    //let tetromino = tetrominoList[3];
+    //let tetromino = tetrominoList[Math.floor(Math.random() * tetrominoList.length)];
+    let tetromino = tetrominoList[3];
     let length = tetromino.shape[0].length;
     let halfLength = Math.floor(length / 2) + length % 2;
     let xSpawn = playfield.centerX - halfLength;
@@ -263,13 +272,16 @@ function spawnTetromino() {
             block.descending = true;
             block.image = tetromino.image;
         })
-        updateDescendingTetromino();
+        drawDescendingBlocks();
+        return true;
     } else {
-        console.log("HAI PERSO!")
+        clearInterval(descendInterval);
+        console.log("HAI PERSO");
+        return false;
     }
 }
 
-function updateDescendingTetromino() {
+function drawDescendingBlocks() {
     currentBlocksPositions = [];
     playfield.blocks.forEach((row, i) => {
         row.forEach((block, y) => {
@@ -279,28 +291,7 @@ function updateDescendingTetromino() {
             }
         });
     });
-
     currentBlocksPositions = currentBlocksPositions.reverse();
-
-    setTimeout(() => {
-
-        let futureBlocksPositions = getNextBlockPositions(currentBlocksPositions, directions.DOWN);
-        let canDescend = futureBlocksPositions.length > 0;
-
-        for (let i = 0; i < futureBlocksPositions.length; i++) {
-            playfield.descendBlock(currentBlocksPositions[i], futureBlocksPositions[i]);
-        }
-
-        if (canDescend) {
-            updateDescendingTetromino();
-        }
-        else {
-            currentBlocksPositions.forEach(currentBlockPosition => {
-                playfield.getBlock(currentBlockPosition).descending = false;
-            })
-            spawnTetromino();
-        }
-    }, 10);
 }
 
 function getNextBlockPositions(currentBlocksPositions, direction) {
@@ -319,10 +310,10 @@ function getNextBlockPositions(currentBlocksPositions, direction) {
             futurePosition = new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y - 1);
         } else if(direction === directions.RIGHT) {
             futurePosition = new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y + 1);
+        } else if (direction === directions.GROUND) {
+            // TODO
         } else if(direction === directions.SPAWN) {
             futurePosition = currentBlockPosition;
-        } else {
-            return false;
         }
 
         if(isPositionOutside(futurePosition) || isPositionAlreadyOccupied(futurePosition)) {
@@ -345,6 +336,13 @@ function isPositionOutside(futurePosition) {
 function isPositionAlreadyOccupied(futurePosition) {
     let block = playfield.getBlock(futurePosition);
     return block.image != null && block.descending === false;
+}
+
+function play() {
+    spawnTetromino()
+    descendInterval = setInterval(() => {
+        move(directions.DOWN)
+    }, 1000);
 }
 
 init();
