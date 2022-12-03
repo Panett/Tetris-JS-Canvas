@@ -182,19 +182,18 @@ function init() {
 }
 
 function move(direction) {
-    let futureBlocksPositions = getNextBlockPositions(currentBlocksPositions, direction);
-    let canDescend = futureBlocksPositions.length > 0;
-    if(canDescend) {
+    let nextTetrominoPositions = getNextBlockPositions(currentBlocksPositions, direction);
+    if(nextTetrominoPositions.permitted) {
         // MOVE BLOCKS IN THE PLAYFIELD
         // REMOVE OLD BLOCKS FROM THE CANVAS
-        for (let i = 0; i < futureBlocksPositions.length; i++) {
+        for (let i = 0; i < nextTetrominoPositions.positions.length; i++) {
             // FROM
             let fromBlock = playfield.getBlock(currentBlocksPositions[i]);
             let img = fromBlock.image;
             fromBlock.descending = false;
             fromBlock.image = null;
             // TO
-            let toBlock = playfield.getBlock(futureBlocksPositions[i]);
+            let toBlock = playfield.getBlock(nextTetrominoPositions.positions[i]);
             ctx.clearRect(fromBlock.x, fromBlock.y, playfield.blockSize, playfield.blockSize);
             toBlock.image = img;
             toBlock.descending = true;
@@ -266,7 +265,8 @@ function spawnTetromino() {
         })
     }
 
-    if(getNextBlockPositions(spawnPositions, directions.SPAWN).length > 0) {
+    let nextBlockPositions = getNextBlockPositions(spawnPositions, directions.SPAWN);
+    if(nextBlockPositions.permitted) {
         spawnPositions.forEach(spawnPositions => {
             let block = playfield.getBlock(new PlayfieldPosition(spawnPositions.i, spawnPositions.y));
             block.descending = true;
@@ -296,10 +296,7 @@ function drawDescendingBlocks() {
 
 function getNextBlockPositions(currentBlocksPositions, direction) {
 
-    //TODO: do a refactor and use the following
-    //let nextTetrominoPositions = new NextTetrominoPositions();
-
-    let futureBlocksPositions = [];
+    let nextTetrominoPositions = new NextTetrominoPositions();
 
     currentBlocksPositions.every(currentBlockPosition => {
         let futurePosition;
@@ -317,14 +314,15 @@ function getNextBlockPositions(currentBlocksPositions, direction) {
         }
 
         if(isPositionOutside(futurePosition) || isPositionAlreadyOccupied(futurePosition)) {
-            futureBlocksPositions = [];
+            nextTetrominoPositions.positions = [];
+            nextTetrominoPositions.permitted = false;
             return false;
         }
-        futureBlocksPositions.push(futurePosition);
+        nextTetrominoPositions.positions.push(futurePosition);
         return true;
     });
 
-    return futureBlocksPositions;
+    return nextTetrominoPositions;
 }
 
 function isPositionOutside(futurePosition) {
@@ -342,7 +340,7 @@ function play() {
     spawnTetromino()
     descendInterval = setInterval(() => {
         move(directions.DOWN)
-    }, 1000);
+    }, 100);
 }
 
 init();
