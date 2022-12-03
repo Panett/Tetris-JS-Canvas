@@ -43,8 +43,8 @@ class PlayfieldPosition {
 }
 
 class NextTetrominoPositions {
-    positions;
-    _isPermitted;
+    positions = [];
+    permitted = true;
 }
 
 class Block {
@@ -109,7 +109,7 @@ class Playfield {
     addRow(row) {
         this._blocks.push(row);
     }
-    descend(fromPosition, toPosition) {
+    descendBlock(fromPosition, toPosition) {
         let fromBlock = this.getBlock(fromPosition);
         let tmpBlockImg = fromBlock.image;
         fromBlock.descending = false;
@@ -166,14 +166,37 @@ const directions = {
     DOWN: "DOWN",
     RIGHT: "RIGHT",
     LEFT: "LEFT",
+    GROUND: "GROUND",
     SPAWN: "SPAWN"
 };
 
 const playfield = new Playfield(35);
 
+let currentBlocksPositions = [];
+
 function init() {
     drawGrid();
+    document.addEventListener('keydown', function(event) {
+        if(event.code == 'KeyS') {
+            move(directions.DOWN);
+        } else if(event.code == 'KeyA') {
+            move(directions.LEFT);
+        } else if(event.code == 'KeyD') {
+            move(directions.RIGHT);
+        } else if(event.code == 'Space') {
+            move(directions.GROUND);
+        }
+    });
     loadImages().then(() => spawnTetromino());
+}
+
+function move(direction) {
+    let nextBlockPositions = getNextBlockPositions(currentBlocksPositions, direction);
+    let canMove = nextBlockPositions.length > 0;
+    if(canMove) {
+        console.log(direction);
+        //TODO
+    }
 }
 
 function drawGrid() {
@@ -247,7 +270,7 @@ function spawnTetromino() {
 }
 
 function updateDescendingTetromino() {
-    let currentBlocksPositions = [];
+    currentBlocksPositions = [];
     playfield.blocks.forEach((row, i) => {
         row.forEach((block, y) => {
             if (block.descending) {
@@ -263,10 +286,9 @@ function updateDescendingTetromino() {
 
         let futureBlocksPositions = getNextBlockPositions(currentBlocksPositions, directions.DOWN);
         let canDescend = futureBlocksPositions.length > 0;
-        //console.log("canDescend:", canDescend, "futureBlocksPositions:", futureBlocksPositions);
 
         for (let i = 0; i < futureBlocksPositions.length; i++) {
-            playfield.descend(currentBlocksPositions[i], futureBlocksPositions[i]);
+            playfield.descendBlock(currentBlocksPositions[i], futureBlocksPositions[i]);
         }
 
         if (canDescend) {
@@ -278,12 +300,13 @@ function updateDescendingTetromino() {
             })
             spawnTetromino();
         }
-    }, 100);
+    }, 10);
 }
 
 function getNextBlockPositions(currentBlocksPositions, direction) {
 
-    let nextTetrominoPositions = new NextTetrominoPositions();
+    //TODO: do a refactor and use the following
+    //let nextTetrominoPositions = new NextTetrominoPositions();
 
     let futureBlocksPositions = [];
 
