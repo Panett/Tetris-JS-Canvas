@@ -181,7 +181,15 @@ function init() {
             }
         }
     });
-    loadImages().then(() => play());
+    return Promise.all([
+        loadImage(images.Blue, "assets/Blue.png"),
+        loadImage(images.Green, "assets/Green.png"),
+        loadImage(images.LightBlue, "assets/LightBlue.png"),
+        loadImage(images.Orange, "assets/Orange.png"),
+        loadImage(images.Purple, "assets/Purple.png"),
+        loadImage(images.Red, "assets/Red.png"),
+        loadImage(images.Yellow, "assets/Yellow.png")
+    ]).then(play);
 }
 
 function move(direction) {
@@ -234,18 +242,6 @@ function loadImage(img, src) {
         img.src = src;
         img.onload = () => resolve();
     });
-}
-
-function loadImages() {
-    return Promise.all([
-        loadImage(images.Blue, "assets/Blue.png"),
-        loadImage(images.Green, "assets/Green.png"),
-        loadImage(images.LightBlue, "assets/LightBlue.png"),
-        loadImage(images.Orange, "assets/Orange.png"),
-        loadImage(images.Purple, "assets/Purple.png"),
-        loadImage(images.Red, "assets/Red.png"),
-        loadImage(images.Yellow, "assets/Yellow.png")
-    ]);
 }
 
 function drawBlock(block) {
