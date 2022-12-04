@@ -170,13 +170,13 @@ function init() {
     drawGrid();
     document.addEventListener('keydown', function(event) {
         if(!gameOver) {
-            if(event.code == 'KeyS') {
+            if(event.code == 'KeyS' || event.code == 'ArrowDown') {
                 move(directions.DOWN);
-            } else if(event.code == 'KeyA') {
+            } else if(event.code == 'KeyA' || event.code == 'ArrowLeft') {
                 move(directions.LEFT);
-            } else if(event.code == 'KeyD') {
+            } else if(event.code == 'KeyD' || event.code == 'ArrowRight') {
                 move(directions.RIGHT);
-            } else if(event.code == 'Space') {
+            } else if(event.code == 'Space' || event.code == 'KeyS') {
                 move(directions.GROUND);
             }
         }
