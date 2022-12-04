@@ -181,7 +181,7 @@ function init() {
             }
         }
     });
-    return Promise.all([
+    Promise.all([
         loadImage(images.Blue, "assets/Blue.png"),
         loadImage(images.Green, "assets/Green.png"),
         loadImage(images.LightBlue, "assets/LightBlue.png"),
