@@ -45,7 +45,6 @@ class PlayfieldPosition {
 class NextTetrominoPositions {
     positions = [];
     permitted = true;
-    ignore = false;
 }
 
 class Block {
@@ -186,6 +185,9 @@ function init() {
 }
 
 function move(direction) {
+    if(direction === directions.DOWN || direction === directions.GROUND || direction === directions.RIGHT) {
+        currentBlocksPositions = currentBlocksPositions.reverse();
+    }
     let nextTetrominoPositions = getNextBlockPositions(currentBlocksPositions, direction);
     if(nextTetrominoPositions.permitted) {
         // MOVE BLOCKS IN THE PLAYFIELD
@@ -203,9 +205,7 @@ function move(direction) {
             toBlock.descending = true;
         }
         drawDescendingBlocks();
-    } else if(nextTetrominoPositions.ignore) {
-        //DO NOTHING
-    } else {
+    } else if(direction === directions.DOWN) {
         currentBlocksPositions.forEach(currentBlockPosition => {
             playfield.getBlock(currentBlockPosition).descending = false;
         })
@@ -254,8 +254,8 @@ function drawBlock(block) {
 
 function spawnTetromino() {
 
-    //let tetromino = tetrominoList[Math.floor(Math.random() * tetrominoList.length)];
-    let tetromino = tetrominoList[3];
+    let tetromino = tetrominoList[Math.floor(Math.random() * tetrominoList.length)];
+    //let tetromino = tetrominoList[3];
     let length = tetromino.shape[0].length;
     let halfLength = Math.floor(length / 2) + length % 2;
     let xSpawn = playfield.centerX - halfLength;
@@ -298,7 +298,6 @@ function drawDescendingBlocks() {
             }
         });
     });
-    currentBlocksPositions = currentBlocksPositions.reverse();
 }
 
 function getNextBlockPositions(currentBlocksPositions, direction) {
@@ -312,10 +311,8 @@ function getNextBlockPositions(currentBlocksPositions, direction) {
             futurePosition = new PlayfieldPosition(currentBlockPosition.i + 1, currentBlockPosition.y);
         } else if(direction === directions.LEFT) {
             futurePosition = new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y - 1);
-            nextTetrominoPositions.ignore = true;
         } else if(direction === directions.RIGHT) {
             futurePosition = new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y + 1);
-            nextTetrominoPositions.ignore = true;
         } else if (direction === directions.GROUND) {
             // TODO
         } else if(direction === directions.SPAWN) {
@@ -336,7 +333,7 @@ function getNextBlockPositions(currentBlocksPositions, direction) {
 
 function isPositionOutside(futurePosition) {
     return futurePosition.i > playfield.blocks.length - 1
-        || futurePosition.y > playfield.blocks[0].length
+        || futurePosition.y > playfield.blocks[0].length - 1
         || futurePosition.y < 0;
 }
 
