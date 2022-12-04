@@ -244,10 +244,6 @@ function loadImage(img, src) {
     });
 }
 
-function drawBlock(block) {
-    ctx.drawImage(block.image, block.x, block.y, playfield.blockSize, playfield.blockSize);
-}
-
 function spawnTetromino() {
 
     let tetromino = tetrominoList[Math.floor(Math.random() * tetrominoList.length)];
@@ -290,7 +286,7 @@ function drawDescendingBlocks() {
         row.forEach((block, y) => {
             if (block.descending) {
                 currentBlocksPositions.push(new PlayfieldPosition(i, y));
-                drawBlock(block);
+                ctx.drawImage(block.image, block.x, block.y, playfield.blockSize, playfield.blockSize);
             }
         });
     });
