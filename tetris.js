@@ -1,16 +1,6 @@
 "use strict";
 
-/** @type {HTMLCanvasElement} */
-const gridCanvas = document.getElementById("gridCanvas");
-
-/** @type {HTMLCanvasElement} */
-const gameCanvas = document.getElementById("gameCanvas");
-
-const gctx = gridCanvas.getContext("2d");
-const ctx = gameCanvas.getContext("2d");
-
-const canvasWidth = gameCanvas.getAttribute("width");
-const canvasHeight = gameCanvas.getAttribute("height");
+// ----------------------- CLASSES -----------------------
 
 class Tetromino { 
     constructor(name, image, shape) {
@@ -111,6 +101,20 @@ class Playfield {
     }
 }
 
+// --------------------- GLOBAL VARS ---------------------
+
+/** @type {HTMLCanvasElement} */
+const gridCanvas = document.getElementById("gridCanvas");
+
+/** @type {HTMLCanvasElement} */
+const gameCanvas = document.getElementById("gameCanvas");
+
+const gctx = gridCanvas.getContext("2d");
+const ctx = gameCanvas.getContext("2d");
+
+const canvasWidth = gameCanvas.getAttribute("width");
+const canvasHeight = gameCanvas.getAttribute("height");
+
 const images = {
     Blue: new Image(),
     Green: new Image(),
@@ -166,6 +170,8 @@ let currentBlocksPositions = [];
 let descendInterval;
 let gameOver = false;
 
+// -------------------------------------------------------
+
 function init() {
     drawGrid();
     document.addEventListener('keydown', function(event) {
@@ -193,26 +199,27 @@ function init() {
 }
 
 function move(direction) {
-    if(direction === directions.DOWN || direction === directions.GROUND || direction === directions.RIGHT) {
-        currentBlocksPositions = currentBlocksPositions.reverse();
-    }
-    let nextTetrominoPositions = getNextBlockPositions(currentBlocksPositions, direction);
-    if(nextTetrominoPositions.permitted) {
-        // MOVE BLOCKS IN THE PLAYFIELD
+    let nextBlocksPositions = getNextBlocksPositions(currentBlocksPositions, direction);
+    if(nextBlocksPositions.permitted) {
+        let img = playfield.getBlock(currentBlocksPositions[0]).image;
+        // REMOVE OLD BLOCKS FROM THE PLAYFIELD
         // REMOVE OLD BLOCKS FROM THE CANVAS
-        for (let i = 0; i < nextTetrominoPositions.positions.length; i++) {
-            // FROM
-            let fromBlock = playfield.getBlock(currentBlocksPositions[i]);
-            let img = fromBlock.image;
-            fromBlock.descending = false;
-            fromBlock.image = null;
-            // TO
-            let toBlock = playfield.getBlock(nextTetrominoPositions.positions[i]);
-            ctx.clearRect(fromBlock.x, fromBlock.y, playfield.blockSize, playfield.blockSize);
-            toBlock.image = img;
-            toBlock.descending = true;
-        }
-        drawDescendingBlocks();
+        currentBlocksPositions.forEach(currentBlockPosition => {
+            let oldBlock = playfield.getBlock(currentBlockPosition);
+            oldBlock.descending = false;
+            oldBlock.image = null;
+            ctx.clearRect(oldBlock.x, oldBlock.y, playfield.blockSize, playfield.blockSize);
+        });
+        // UPDATE currentBlocksPositions
+        // ADD NEW BLOCKS TO THE PLAYFIELD
+        // ADD NEW BLOCKS TO THE CANVAS
+        currentBlocksPositions = nextBlocksPositions.positions;
+        nextBlocksPositions.positions.forEach(nextBlockPosition => {
+            let newBlock = playfield.getBlock(nextBlockPosition);
+            newBlock.image = img;
+            newBlock.descending = true;
+            ctx.drawImage(newBlock.image, newBlock.x, newBlock.y, playfield.blockSize, playfield.blockSize);
+        });
     } else if(direction === directions.DOWN) {
         currentBlocksPositions.forEach(currentBlockPosition => {
             playfield.getBlock(currentBlockPosition).descending = false;
@@ -263,14 +270,16 @@ function spawnTetromino() {
         })
     }
 
-    let nextBlockPositions = getNextBlockPositions(spawnPositions, directions.SPAWN);
-    if(nextBlockPositions.permitted) {
-        spawnPositions.forEach(spawnPositions => {
-            let block = playfield.getBlock(new PlayfieldPosition(spawnPositions.i, spawnPositions.y));
+    currentBlocksPositions = [];
+    let nextBlocksPositions = getNextBlocksPositions(spawnPositions, directions.SPAWN);
+    if(nextBlocksPositions.permitted) {
+        nextBlocksPositions.positions.forEach(nextBlockPosition => {
+            currentBlocksPositions.push(nextBlockPosition);
+            let block = playfield.getBlock(new PlayfieldPosition(nextBlockPosition.i, nextBlockPosition.y));
             block.descending = true;
             block.image = tetromino.image;
-        })
-        drawDescendingBlocks();
+            ctx.drawImage(block.image, block.x, block.y, playfield.blockSize, playfield.blockSize);
+        });
         return true;
     } else {
         clearInterval(descendInterval);
@@ -280,36 +289,21 @@ function spawnTetromino() {
     }
 }
 
-function drawDescendingBlocks() {
-    currentBlocksPositions = [];
-    playfield.blocks.forEach((row, i) => {
-        row.forEach((block, y) => {
-            if (block.descending) {
-                currentBlocksPositions.push(new PlayfieldPosition(i, y));
-                ctx.drawImage(block.image, block.x, block.y, playfield.blockSize, playfield.blockSize);
-            }
-        });
-    });
-}
-
-function getNextBlockPositions(currentBlocksPositions, direction) {
+function getNextBlocksPositions(currentBlocksPositions, direction) {
 
     let nextTetrominoPositions = new NextTetrominoPositions();
 
     currentBlocksPositions.every(currentBlockPosition => {
-        let futurePosition;
 
-        if(direction === directions.DOWN) {
-            futurePosition = new PlayfieldPosition(currentBlockPosition.i + 1, currentBlockPosition.y);
-        } else if(direction === directions.LEFT) {
-            futurePosition = new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y - 1);
-        } else if(direction === directions.RIGHT) {
-            futurePosition = new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y + 1);
-        } else if (direction === directions.GROUND) {
-            // TODO
-        } else if(direction === directions.SPAWN) {
-            futurePosition = currentBlockPosition;
-        }
+        const futurePositionCalculator = {
+            [directions.DOWN]: new PlayfieldPosition(currentBlockPosition.i + 1, currentBlockPosition.y),
+            [directions.LEFT]: new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y - 1),
+            [directions.RIGHT]: new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y + 1),
+            [directions.GROUND]: null, //TODO
+            [directions.SPAWN]: currentBlockPosition
+        };
+
+        let futurePosition = futurePositionCalculator[direction];
 
         if(isPositionOutside(futurePosition) || isPositionAlreadyOccupied(futurePosition)) {
             nextTetrominoPositions.positions = [];
@@ -324,9 +318,9 @@ function getNextBlockPositions(currentBlocksPositions, direction) {
 }
 
 function isPositionOutside(futurePosition) {
-    return futurePosition.i > playfield.blocks.length - 1
-        || futurePosition.y > playfield.blocks[0].length - 1
-        || futurePosition.y < 0;
+    return (futurePosition.i > playfield.blocks.length - 1      // DOWN
+        || futurePosition.y < 0                                 // LEFT
+        || futurePosition.y > playfield.blocks[0].length - 1);  // RIGHT
 }
 
 function isPositionAlreadyOccupied(futurePosition) {
@@ -338,7 +332,7 @@ function play() {
     spawnTetromino()
     descendInterval = setInterval(() => {
         move(directions.DOWN)
-    }, 100);
+    }, 20000000);
 }
 
 init();
