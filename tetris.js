@@ -38,17 +38,17 @@ class NextTetrominoPositions {
 }
 
 class Block {
-    constructor(image, descending, x, y) {
+    constructor(image, falling, x, y) {
         this._image = image;
-        this._descending = descending;
+        this._falling = falling;
         this._x = x;
         this._y = y;
     }
     get image() {
         return this._image;
     }
-    get descending() {
-        return this._descending;
+    get falling() {
+        return this._falling;
     }
     get x() {
         return this._x;
@@ -59,8 +59,8 @@ class Block {
     set image(value) {
         this._image = value;
     }
-    set descending(value) {
-        this._descending = value;
+    set falling(value) {
+        this._falling = value;
     }
 }
 
@@ -167,7 +167,7 @@ const playfield = new Playfield(35);
 
 let currentBlocksPositions = [];
 
-let descendInterval;
+let fallInterval;
 let gameOver = false;
 
 // -------------------------------------------------------
@@ -202,27 +202,25 @@ function move(direction) {
     let nextBlocksPositions = getNextBlocksPositions(currentBlocksPositions, direction);
     if(nextBlocksPositions.permitted) {
         let img = playfield.getBlock(currentBlocksPositions[0]).image;
-        // REMOVE OLD BLOCKS FROM THE PLAYFIELD
-        // REMOVE OLD BLOCKS FROM THE CANVAS
+        // REMOVE OLD BLOCKS FROM PLAYFIELD AND CANVAS
         currentBlocksPositions.forEach(currentBlockPosition => {
             let oldBlock = playfield.getBlock(currentBlockPosition);
-            oldBlock.descending = false;
+            oldBlock.falling = false;
             oldBlock.image = null;
             ctx.clearRect(oldBlock.x, oldBlock.y, playfield.blockSize, playfield.blockSize);
         });
         // UPDATE currentBlocksPositions
-        // ADD NEW BLOCKS TO THE PLAYFIELD
-        // ADD NEW BLOCKS TO THE CANVAS
+        // ADD NEW BLOCKS TO PLAYFIELD AND CANVAS
         currentBlocksPositions = nextBlocksPositions.positions;
         nextBlocksPositions.positions.forEach(nextBlockPosition => {
             let newBlock = playfield.getBlock(nextBlockPosition);
             newBlock.image = img;
-            newBlock.descending = true;
+            newBlock.falling = true;
             ctx.drawImage(newBlock.image, newBlock.x, newBlock.y, playfield.blockSize, playfield.blockSize);
         });
     } else if(direction === directions.DOWN) {
         currentBlocksPositions.forEach(currentBlockPosition => {
-            playfield.getBlock(currentBlockPosition).descending = false;
+            playfield.getBlock(currentBlockPosition).falling = false;
         })
         spawnTetromino();
     }
@@ -276,13 +274,13 @@ function spawnTetromino() {
         nextBlocksPositions.positions.forEach(nextBlockPosition => {
             currentBlocksPositions.push(nextBlockPosition);
             let block = playfield.getBlock(new PlayfieldPosition(nextBlockPosition.i, nextBlockPosition.y));
-            block.descending = true;
+            block.falling = true;
             block.image = tetromino.image;
             ctx.drawImage(block.image, block.x, block.y, playfield.blockSize, playfield.blockSize);
         });
         return true;
     } else {
-        clearInterval(descendInterval);
+        clearInterval(fallInterval);
         gameOver = true;
         console.log("HAI PERSO");
         return false;
@@ -325,14 +323,14 @@ function isPositionOutside(futurePosition) {
 
 function isPositionAlreadyOccupied(futurePosition) {
     let block = playfield.getBlock(futurePosition);
-    return block.image != null && block.descending === false;
+    return block.image != null && block.falling === false;
 }
 
 function play() {
     spawnTetromino()
-    descendInterval = setInterval(() => {
+    fallInterval = setInterval(() => {
         move(directions.DOWN)
-    }, 20000000);
+    }, 500);
 }
 
 init();
