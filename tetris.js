@@ -18,8 +18,10 @@ class PlayfieldPosition {
 }
 
 class NextTetrominoPositions {
-    positions = [];
-    permitted = true;
+    constructor() {
+        this.positions = [];
+        this.permitted = true;
+    }
 }
 
 class Block {
@@ -290,16 +292,16 @@ function getNextBlocksPositions(currentBlocksPositions, direction) {
     let nextTetrominoPositions = new NextTetrominoPositions();
 
     if(direction === directions.GROUND) {
-        //findLowestPossiblePositions(currentBlocksPositions);
+        nextTetrominoPositions.positions = findLowestPossiblePositions(currentBlocksPositions);
     } else {
         currentBlocksPositions.map(currentBlockPosition => {
             const futurePositionCalculator = {
                 [directions.DOWN]: new PlayfieldPosition(currentBlockPosition.i + 1, currentBlockPosition.y),
                 [directions.LEFT]: new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y - 1),
                 [directions.RIGHT]: new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y + 1),
-                [directions.SPAWN]: currentBlockPosition
+                DEFAULT: currentBlockPosition
             };
-            return futurePositionCalculator[direction];
+            return futurePositionCalculator[direction] || futurePositionCalculator['DEFAULT'];
         }).every(futurePosition => {
             if(isPositionOutside(futurePosition) || isPositionAlreadyOccupied(futurePosition)) {
                 nextTetrominoPositions.positions = [];
@@ -310,7 +312,6 @@ function getNextBlocksPositions(currentBlocksPositions, direction) {
             return true;
         });
     }
-
     return nextTetrominoPositions;
 }
 
