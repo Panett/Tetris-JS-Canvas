@@ -35,6 +35,7 @@ class Playfield {
     constructor(canvas, blockSize) {
         this.blockSize = blockSize;
         this.blocks = [];
+        this.currentBlocksPositions = [];
         this.canvas = canvas;
         this.canvasWidth = canvas.getAttribute("width");
         this.canvasHeight = canvas.getAttribute("height");
@@ -70,6 +71,9 @@ const gridCanvas = document.getElementById("gridCanvas");
 
 /** @type {HTMLCanvasElement} */
 const gameCanvas = document.getElementById("gameCanvas");
+
+/** @type {HTMLCanvasElement} */
+const nextTetrominoCanvas = document.getElementById("nextTetrominoCanvas");
 
 const gctx = gridCanvas.getContext("2d");
 
@@ -121,7 +125,8 @@ const directions = {
     SPAWN: "SPAWN"
 };
 
-const playfield = new Playfield(gameCanvas, 35);
+const gamePlayfield = new Playfield(gameCanvas, 35);
+const nextTetrominoPlayfield = new Playfield(nextTetrominoCanvas, 35);
 
 let currentBlocksPositions = [];
 
@@ -131,7 +136,8 @@ let gameOver = false;
 // -------------------------------------------------------
 
 function init() {
-    drawGrid();
+    drawGrid(gctx, gamePlayfield);
+    drawGrid(nextTetrominoPlayfield.ctx, nextTetrominoPlayfield);
     document.addEventListener('keydown', function(event) {
         if(!gameOver) {
             if(event.code === 'KeyS' || event.code === 'ArrowDown') {
@@ -159,45 +165,45 @@ function init() {
 function move(direction) {
     let nextBlocksPositions = getNextBlocksPositions(currentBlocksPositions, direction);
     if(nextBlocksPositions.permitted) {
-        let img = playfield.getBlock(currentBlocksPositions[0]).image;
+        let img = gamePlayfield.getBlock(currentBlocksPositions[0]).image;
         // REMOVE OLD BLOCKS FROM PLAYFIELD AND CANVAS
         currentBlocksPositions.forEach(currentBlockPosition => {
-            let oldBlock = playfield.getBlock(currentBlockPosition);
+            let oldBlock = gamePlayfield.getBlock(currentBlockPosition);
             oldBlock.falling = false;
             oldBlock.image = null;
-            playfield.ctx.clearRect(oldBlock.x, oldBlock.y, playfield.blockSize, playfield.blockSize);
+            gamePlayfield.ctx.clearRect(oldBlock.x, oldBlock.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
         });
         // UPDATE currentBlocksPositions
         // ADD NEW BLOCKS TO PLAYFIELD AND CANVAS
         currentBlocksPositions = nextBlocksPositions.positions;
         nextBlocksPositions.positions.forEach(nextBlockPosition => {
-            let newBlock = playfield.getBlock(nextBlockPosition);
+            let newBlock = gamePlayfield.getBlock(nextBlockPosition);
             newBlock.image = img;
             newBlock.falling = true;
-            playfield.ctx.drawImage(newBlock.image, newBlock.x, newBlock.y, playfield.blockSize, playfield.blockSize);
+            gamePlayfield.ctx.drawImage(newBlock.image, newBlock.x, newBlock.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
         });
     } else if(direction === directions.DOWN) {
         currentBlocksPositions.forEach(currentBlockPosition => {
-            playfield.getBlock(currentBlockPosition).falling = false;
+            gamePlayfield.getBlock(currentBlockPosition).falling = false;
         })
         spawnTetromino();
     }
 }
 
-function drawGrid() {
-    gctx.strokeStyle = 'white';
-    gctx.lineWidth = 3.3;
-    gctx.fillStyle = "#a29bfe";
-    gctx.fillRect(0, 0, playfield.canvasWidth, playfield.canvasHeight);
+function drawGrid(ctx, playfield) {
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 3.3;
+    ctx.fillStyle = "#a29bfe";
+    ctx.fillRect(0, 0, playfield.canvasWidth, playfield.canvasHeight);
     for (let x = 0; x <= playfield.canvasWidth; x += playfield.blockSize) {
-        gctx.moveTo(x, 0);
-        gctx.lineTo(x, playfield.canvasHeight);
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, playfield.canvasHeight);
     }
     for (let y = 0; y <= playfield.canvasHeight; y += playfield.blockSize) {
-        gctx.moveTo(0, y);
-        gctx.lineTo(playfield.canvasWidth, y);
+        ctx.moveTo(0, y);
+        ctx.lineTo(playfield.canvasWidth, y);
     }
-    gctx.stroke();
+    ctx.stroke();
 }
 
 function loadImage(img, src) {
@@ -210,10 +216,9 @@ function loadImage(img, src) {
 function spawnTetromino() {
 
     let tetromino = tetrominoList[Math.floor(Math.random() * tetrominoList.length)];
-    //let tetromino = tetrominoList[3];
     let length = tetromino.shape[0].length;
     let halfLength = Math.floor(length / 2) + length % 2;
-    let xSpawn = playfield.centerX - halfLength;
+    let xSpawn = gamePlayfield.centerX - halfLength;
 
     let spawnPositions = [];
     for (let y = 0; y < tetromino.shape.length; y++) {
@@ -231,10 +236,10 @@ function spawnTetromino() {
     if(nextBlocksPositions.permitted) {
         nextBlocksPositions.positions.forEach(nextBlockPosition => {
             currentBlocksPositions.push(nextBlockPosition);
-            let block = playfield.getBlock(new PlayfieldPosition(nextBlockPosition.i, nextBlockPosition.y));
+            let block = gamePlayfield.getBlock(new PlayfieldPosition(nextBlockPosition.i, nextBlockPosition.y));
             block.falling = true;
             block.image = tetromino.image;
-            playfield.ctx.drawImage(block.image, block.x, block.y, playfield.blockSize, playfield.blockSize);
+            gamePlayfield.ctx.drawImage(block.image, block.x, block.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
         });
         return true;
     } else {
@@ -274,13 +279,13 @@ function getNextBlocksPositions(currentBlocksPositions, direction) {
 }
 
 function isPositionOutside(futurePosition) {
-    return (futurePosition.i > playfield.blocks.length - 1      // DOWN
+    return (futurePosition.i > gamePlayfield.blocks.length - 1      // DOWN
         || futurePosition.y < 0                                 // LEFT
-        || futurePosition.y > playfield.blocks[0].length - 1);  // RIGHT
+        || futurePosition.y > gamePlayfield.blocks[0].length - 1);  // RIGHT
 }
 
 function isPositionAlreadyOccupied(futurePosition) {
-    let block = playfield.getBlock(futurePosition);
+    let block = gamePlayfield.getBlock(futurePosition);
     return block.image != null && block.falling === false;
 }
 
