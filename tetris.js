@@ -128,8 +128,6 @@ const directions = {
 const gamePlayfield = new Playfield(gameCanvas, 35);
 const nextTetrominoPlayfield = new Playfield(nextTetrominoCanvas, 35);
 
-let currentBlocksPositions = [];
-
 let fallInterval;
 let gameOver = false;
 
@@ -163,11 +161,11 @@ function init() {
 }
 
 function move(direction) {
-    let nextBlocksPositions = getNextBlocksPositions(currentBlocksPositions, direction);
+    let nextBlocksPositions = getNextBlocksPositions(gamePlayfield.currentBlocksPositions, direction);
     if(nextBlocksPositions.permitted) {
-        let img = gamePlayfield.getBlock(currentBlocksPositions[0]).image;
+        let img = gamePlayfield.getBlock(gamePlayfield.currentBlocksPositions[0]).image;
         // REMOVE OLD BLOCKS FROM PLAYFIELD AND CANVAS
-        currentBlocksPositions.forEach(currentBlockPosition => {
+        gamePlayfield.currentBlocksPositions.forEach(currentBlockPosition => {
             let oldBlock = gamePlayfield.getBlock(currentBlockPosition);
             oldBlock.falling = false;
             oldBlock.image = null;
@@ -175,7 +173,7 @@ function move(direction) {
         });
         // UPDATE currentBlocksPositions
         // ADD NEW BLOCKS TO PLAYFIELD AND CANVAS
-        currentBlocksPositions = nextBlocksPositions.positions;
+        gamePlayfield.currentBlocksPositions = nextBlocksPositions.positions;
         nextBlocksPositions.positions.forEach(nextBlockPosition => {
             let newBlock = gamePlayfield.getBlock(nextBlockPosition);
             newBlock.image = img;
@@ -183,7 +181,7 @@ function move(direction) {
             gamePlayfield.ctx.drawImage(newBlock.image, newBlock.x, newBlock.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
         });
     } else if(direction === directions.DOWN) {
-        currentBlocksPositions.forEach(currentBlockPosition => {
+        gamePlayfield.currentBlocksPositions.forEach(currentBlockPosition => {
             gamePlayfield.getBlock(currentBlockPosition).falling = false;
         })
         spawnTetromino();
@@ -231,11 +229,11 @@ function spawnTetromino() {
         })
     }
 
-    currentBlocksPositions = [];
+    gamePlayfield.currentBlocksPositions = [];
     let nextBlocksPositions = getNextBlocksPositions(spawnPositions, directions.SPAWN);
     if(nextBlocksPositions.permitted) {
         nextBlocksPositions.positions.forEach(nextBlockPosition => {
-            currentBlocksPositions.push(nextBlockPosition);
+            gamePlayfield.currentBlocksPositions.push(nextBlockPosition);
             let block = gamePlayfield.getBlock(new PlayfieldPosition(nextBlockPosition.i, nextBlockPosition.y));
             block.falling = true;
             block.image = tetromino.image;
