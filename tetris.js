@@ -151,6 +151,10 @@ function init() {
                 move(directions.RIGHT);
             } else if(event.code === 'Space') {
                 move(directions.GROUND);
+            } else if(event.code === 'KeyQ') {
+                rotate(directions.LEFT);
+            } else if(event.code === 'KeyE') {
+                rotate(directions.RIGHT);
             }
         }
     });
@@ -163,6 +167,10 @@ function init() {
         loadImage(images.Red, "assets/Red.png"),
         loadImage(images.Yellow, "assets/Yellow.png")
     ]).then(play);
+}
+
+function rotate(direction) {
+    console.log(gamePlayfield.currentBlocksPositions);
 }
 
 function move(direction) {
