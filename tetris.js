@@ -245,8 +245,9 @@ function spawnTetromino() {
     });
     nextTetrominoPlayfield.currentBlocksPositions = [];
     nextTetrominoSpawnPositions.forEach(position => {
-        nextTetrominoPlayfield.currentBlocksPositions.push(position);
-        let block = nextTetrominoPlayfield.getBlock(position);
+        let offsetPosition = new PlayfieldPosition(position.i + 1, position.y);
+        nextTetrominoPlayfield.currentBlocksPositions.push(offsetPosition);
+        let block = nextTetrominoPlayfield.getBlock(offsetPosition);
         nextTetrominoPlayfield.mainCtx.drawImage(nextTetromino.image, block.x, block.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
     });
 
@@ -300,7 +301,7 @@ function getNextBlocksPositions(currentBlocksPositions, direction) {
 
 function isPositionOutside(futurePosition) {
     return (futurePosition.i > gamePlayfield.blocks.length - 1      // DOWN
-        || futurePosition.y < 0                                 // LEFT
+        || futurePosition.y < 0                                     // LEFT
         || futurePosition.y > gamePlayfield.blocks[0].length - 1);  // RIGHT
 }
 
