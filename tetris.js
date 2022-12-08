@@ -147,7 +147,7 @@ function init() {
                 move(directions.LEFT);
             } else if(event.code === 'KeyD' || event.code === 'ArrowRight') {
                 move(directions.RIGHT);
-            } else if(event.code === 'Space' || event.code === 'KeyS') {
+            } else if(event.code === 'Space') {
                 move(directions.GROUND);
             }
         }
@@ -183,7 +183,7 @@ function move(direction) {
             newBlock.falling = true;
             gamePlayfield.mainCtx.drawImage(newBlock.image, newBlock.x, newBlock.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
         });
-    } else if(direction === directions.DOWN) {
+    } else if(direction === directions.DOWN || direction === directions.GROUND) {
         gamePlayfield.currentBlocksPositions.forEach(currentBlockPosition => {
             gamePlayfield.getBlock(currentBlockPosition).falling = false;
         })
@@ -271,30 +271,45 @@ function spawnTetromino() {
     }
 }
 
+function findLowestPossiblePositions(currentBlocksPositions) {
+    let found = false;
+    let lastPossiblePosition = currentBlocksPositions;
+    while(!found) {
+        let nextBlocksPositions = getNextBlocksPositions(lastPossiblePosition, directions.DOWN);
+        if(nextBlocksPositions.permitted) {
+            lastPossiblePosition = nextBlocksPositions.positions;
+        } else {
+            found = true;
+        }
+    }
+    return lastPossiblePosition;
+}
+
 function getNextBlocksPositions(currentBlocksPositions, direction) {
 
     let nextTetrominoPositions = new NextTetrominoPositions();
 
-    currentBlocksPositions.every(currentBlockPosition => {
-
-        const futurePositionCalculator = {
-            [directions.DOWN]: new PlayfieldPosition(currentBlockPosition.i + 1, currentBlockPosition.y),
-            [directions.LEFT]: new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y - 1),
-            [directions.RIGHT]: new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y + 1),
-            [directions.GROUND]: null, //TODO
-            [directions.SPAWN]: currentBlockPosition
-        };
-
-        let futurePosition = futurePositionCalculator[direction];
-
-        if(isPositionOutside(futurePosition) || isPositionAlreadyOccupied(futurePosition)) {
-            nextTetrominoPositions.positions = [];
-            nextTetrominoPositions.permitted = false;
-            return false;
-        }
-        nextTetrominoPositions.positions.push(futurePosition);
-        return true;
-    });
+    if(direction === directions.GROUND) {
+        //findLowestPossiblePositions(currentBlocksPositions);
+    } else {
+        currentBlocksPositions.map(currentBlockPosition => {
+            const futurePositionCalculator = {
+                [directions.DOWN]: new PlayfieldPosition(currentBlockPosition.i + 1, currentBlockPosition.y),
+                [directions.LEFT]: new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y - 1),
+                [directions.RIGHT]: new PlayfieldPosition(currentBlockPosition.i, currentBlockPosition.y + 1),
+                [directions.SPAWN]: currentBlockPosition
+            };
+            return futurePositionCalculator[direction];
+        }).every(futurePosition => {
+            if(isPositionOutside(futurePosition) || isPositionAlreadyOccupied(futurePosition)) {
+                nextTetrominoPositions.positions = [];
+                nextTetrominoPositions.permitted = false;
+                return false;
+            }
+            nextTetrominoPositions.positions.push(futurePosition);
+            return true;
+        });
+    }
 
     return nextTetrominoPositions;
 }
