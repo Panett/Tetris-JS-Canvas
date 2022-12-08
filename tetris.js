@@ -32,14 +32,14 @@ class Block {
 }
 
 class Playfield {
-    constructor(canvas, blockSize) {
+    constructor(canvas, gridCanvas, blockSize) {
         this.blockSize = blockSize;
         this.blocks = [];
         this.currentBlocksPositions = [];
-        this.canvas = canvas;
+        this.mainCtx = canvas.getContext("2d");
+        this.gridCtx = gridCanvas.getContext("2d");
         this.canvasWidth = canvas.getAttribute("width");
         this.canvasHeight = canvas.getAttribute("height");
-        this.ctx = canvas.getContext("2d");
         this.centerX = null;
         this.init();
     }
@@ -67,15 +67,16 @@ class Playfield {
 // --------------------- GLOBAL VARS ---------------------
 
 /** @type {HTMLCanvasElement} */
-const gridCanvas = document.getElementById("gridCanvas");
+const gameGridCanvas = document.getElementById("gameGridCanvas");
 
 /** @type {HTMLCanvasElement} */
 const gameCanvas = document.getElementById("gameCanvas");
 
 /** @type {HTMLCanvasElement} */
-const nextTetrominoCanvas = document.getElementById("nextTetrominoCanvas");
+const nextTetrominoGridCanvas = document.getElementById("nextTetrominoGridCanvas");
 
-const gctx = gridCanvas.getContext("2d");
+/** @type {HTMLCanvasElement} */
+const nextTetrominoCanvas = document.getElementById("nextTetrominoCanvas");
 
 const images = {
     Blue: new Image(),
@@ -125,17 +126,19 @@ const directions = {
     SPAWN: "SPAWN"
 };
 
-const gamePlayfield = new Playfield(gameCanvas, 35);
-const nextTetrominoPlayfield = new Playfield(nextTetrominoCanvas, 35);
+const gamePlayfield = new Playfield(gameCanvas, gameGridCanvas, 35);
+const nextTetrominoPlayfield = new Playfield(nextTetrominoCanvas, nextTetrominoGridCanvas, 35);
 
+let nextTetromino = null;
 let fallInterval;
 let gameOver = false;
 
 // -------------------------------------------------------
 
 function init() {
-    drawGrid(gctx, gamePlayfield);
-    drawGrid(nextTetrominoPlayfield.ctx, nextTetrominoPlayfield);
+    drawGrid(gamePlayfield);
+    drawGrid(nextTetrominoPlayfield);
+    nextTetromino = tetrominoList[Math.floor(Math.random() * tetrominoList.length)];
     document.addEventListener('keydown', function(event) {
         if(!gameOver) {
             if(event.code === 'KeyS' || event.code === 'ArrowDown') {
@@ -169,7 +172,7 @@ function move(direction) {
             let oldBlock = gamePlayfield.getBlock(currentBlockPosition);
             oldBlock.falling = false;
             oldBlock.image = null;
-            gamePlayfield.ctx.clearRect(oldBlock.x, oldBlock.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
+            gamePlayfield.mainCtx.clearRect(oldBlock.x, oldBlock.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
         });
         // UPDATE currentBlocksPositions
         // ADD NEW BLOCKS TO PLAYFIELD AND CANVAS
@@ -178,7 +181,7 @@ function move(direction) {
             let newBlock = gamePlayfield.getBlock(nextBlockPosition);
             newBlock.image = img;
             newBlock.falling = true;
-            gamePlayfield.ctx.drawImage(newBlock.image, newBlock.x, newBlock.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
+            gamePlayfield.mainCtx.drawImage(newBlock.image, newBlock.x, newBlock.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
         });
     } else if(direction === directions.DOWN) {
         gamePlayfield.currentBlocksPositions.forEach(currentBlockPosition => {
@@ -188,7 +191,8 @@ function move(direction) {
     }
 }
 
-function drawGrid(ctx, playfield) {
+function drawGrid(playfield) {
+    let ctx = playfield.gridCtx;
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 3.3;
     ctx.fillStyle = "#a29bfe";
@@ -211,13 +215,10 @@ function loadImage(img, src) {
     });
 }
 
-function spawnTetromino() {
-
-    let tetromino = tetrominoList[Math.floor(Math.random() * tetrominoList.length)];
+function calculateSpawnPositions(tetromino, playfield) {
     let length = tetromino.shape[0].length;
     let halfLength = Math.floor(length / 2) + length % 2;
-    let xSpawn = gamePlayfield.centerX - halfLength;
-
+    let xSpawn = playfield.centerX - halfLength;
     let spawnPositions = [];
     for (let y = 0; y < tetromino.shape.length; y++) {
         let xLastSpawn = xSpawn;
@@ -228,16 +229,37 @@ function spawnTetromino() {
             xLastSpawn++;
         })
     }
+    return spawnPositions;
+}
 
+function spawnTetromino() {
+    let tetromino = nextTetromino;
+    nextTetromino = tetrominoList[Math.floor(Math.random() * tetrominoList.length)];
+    let spawnPositions = calculateSpawnPositions(tetromino, gamePlayfield);
+    let nextTetrominoSpawnPositions = calculateSpawnPositions(nextTetromino, nextTetrominoPlayfield);
+
+    // DRAW IN THE NEXT TETROMINO CANVAS
+    nextTetrominoPlayfield.currentBlocksPositions.forEach(position => {
+        let block = nextTetrominoPlayfield.getBlock(position);
+        nextTetrominoPlayfield.mainCtx.clearRect(block.x, block.y, nextTetrominoPlayfield.blockSize, nextTetrominoPlayfield.blockSize);
+    });
+    nextTetrominoPlayfield.currentBlocksPositions = [];
+    nextTetrominoSpawnPositions.forEach(position => {
+        nextTetrominoPlayfield.currentBlocksPositions.push(position);
+        let block = nextTetrominoPlayfield.getBlock(position);
+        nextTetrominoPlayfield.mainCtx.drawImage(nextTetromino.image, block.x, block.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
+    });
+
+    // DRAW IN THE MAIN TETROMINO CANVAS
     gamePlayfield.currentBlocksPositions = [];
     let nextBlocksPositions = getNextBlocksPositions(spawnPositions, directions.SPAWN);
     if(nextBlocksPositions.permitted) {
-        nextBlocksPositions.positions.forEach(nextBlockPosition => {
-            gamePlayfield.currentBlocksPositions.push(nextBlockPosition);
-            let block = gamePlayfield.getBlock(new PlayfieldPosition(nextBlockPosition.i, nextBlockPosition.y));
+        nextBlocksPositions.positions.forEach(position => {
+            gamePlayfield.currentBlocksPositions.push(position);
+            let block = gamePlayfield.getBlock(position);
             block.falling = true;
             block.image = tetromino.image;
-            gamePlayfield.ctx.drawImage(block.image, block.x, block.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
+            gamePlayfield.mainCtx.drawImage(block.image, block.x, block.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
         });
         return true;
     } else {
