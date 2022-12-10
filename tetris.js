@@ -3,9 +3,9 @@
 // ----------------------- CLASSES -----------------------
 
 class Tetromino { 
-    constructor(name, image, shape) {
+    constructor(name, blockImages, shape) {
         this.name = name;
-        this.image = image;
+        this.blockImages = blockImages;
         this.shape = shape;
     }
 }
@@ -25,8 +25,8 @@ class NextTetrominoPositions {
 }
 
 class Block {
-    constructor(image, falling, x, y) {
-        this.image = image;
+    constructor(blockImages, falling, x, y) {
+        this.blockImages = blockImages;
         this.falling = falling;
         this.x = x;
         this.y = y;
@@ -38,6 +38,7 @@ class Playfield {
         this.blockSize = blockSize;
         this.blocks = [];
         this.currentBlocksPositions = [];
+        this.lowestPossiblePositions = [];
         this.mainCtx = canvas.getContext("2d");
         this.gridCtx = gridCanvas.getContext("2d");
         this.canvasWidth = canvas.getAttribute("width");
@@ -49,7 +50,7 @@ class Playfield {
         for (let i = 0; i < this.canvasHeight / this.blockSize; i++) {
             let row = [];
             for (let y = 0; y < this.canvasWidth / this.blockSize; y++) {
-                row.push(new Block(null, false, y*this.blockSize, i*this.blockSize));
+                row.push(new Block(new BlockImages(null, null), false, y*this.blockSize, i*this.blockSize));
             }
             this.addRow(row);
         }
@@ -63,6 +64,13 @@ class Playfield {
     }
     addRow(row) {
         this.blocks.push(row);
+    }
+}
+
+class BlockImages {
+    constructor(filled, empty) {
+        this.filled = filled;
+        this.empty = empty;
     }
 }
 
@@ -80,41 +88,41 @@ const nextTetrominoGridCanvas = document.getElementById("nextTetrominoGridCanvas
 /** @type {HTMLCanvasElement} */
 const nextTetrominoCanvas = document.getElementById("nextTetrominoCanvas");
 
-const images = {
-    Blue: new Image(),
-    Green: new Image(),
-    LightBlue: new Image(),
-    Orange: new Image(),
-    Purple: new Image(),
-    Red: new Image(),
-    Yellow: new Image()
+const blockImages = {
+    blue: new BlockImages(new Image(), new Image()),
+    green: new BlockImages(new Image(), new Image()),
+    lightBlue: new BlockImages(new Image(), new Image()),
+    orange: new BlockImages(new Image(), new Image()),
+    purple: new BlockImages(new Image(), new Image()),
+    red: new BlockImages(new Image(), new Image()),
+    yellow: new BlockImages(new Image(), new Image())
 };
 
 const tetrominoList = [
-    new Tetromino('I-Block', images.LightBlue, [
+    new Tetromino('I-Block', blockImages.lightBlue, [
         [1, 1, 1, 1]
     ]),
-    new Tetromino('J-Block', images.Blue, [
+    new Tetromino('J-Block', blockImages.blue, [
         [1, 0, 0, 0],
         [1, 1, 1, 1]
     ]),
-    new Tetromino('L-Block', images.Orange, [
+    new Tetromino('L-Block', blockImages.orange, [
         [0, 0, 0, 1],
         [1, 1, 1, 1]
     ]),
-    new Tetromino('O-Block', images.Yellow, [
+    new Tetromino('O-Block', blockImages.yellow, [
         [1, 1],
         [1, 1]
     ]),
-    new Tetromino('S-Block', images.Green, [
+    new Tetromino('S-Block', blockImages.green, [
         [0, 1, 1],
         [1, 1, 0]
     ]),
-    new Tetromino('T-Block', images.Purple, [
+    new Tetromino('T-Block', blockImages.purple, [
         [0, 1, 0],
         [1, 1, 1]
     ]),
-    new Tetromino('Z-Block', images.Red, [
+    new Tetromino('Z-Block', blockImages.red, [
         [1, 1, 0],
         [0, 1, 1]
     ])
@@ -158,15 +166,23 @@ function init() {
             }
         }
     });
-    Promise.all([
-        loadImage(images.Blue, "assets/Blue.png"),
-        loadImage(images.Green, "assets/Green.png"),
-        loadImage(images.LightBlue, "assets/LightBlue.png"),
-        loadImage(images.Orange, "assets/Orange.png"),
-        loadImage(images.Purple, "assets/Purple.png"),
-        loadImage(images.Red, "assets/Red.png"),
-        loadImage(images.Yellow, "assets/Yellow.png")
-    ]).then(play);
+    return Promise.all([
+        loadImage(blockImages.blue.filled, "assets/filled/Blue.png"),
+        loadImage(blockImages.green.filled, "assets/filled/Green.png"),
+        loadImage(blockImages.lightBlue.filled, "assets/filled/LightBlue.png"),
+        loadImage(blockImages.orange.filled, "assets/filled/Orange.png"),
+        loadImage(blockImages.purple.filled, "assets/filled/Purple.png"),
+        loadImage(blockImages.red.filled, "assets/filled/Red.png"),
+        loadImage(blockImages.yellow.filled, "assets/filled/Yellow.png"),
+
+        loadImage(blockImages.blue.empty, "assets/empty/Blue.png"),
+        loadImage(blockImages.green.empty, "assets/empty/Green.png"),
+        loadImage(blockImages.lightBlue.empty, "assets/empty/LightBlue.png"),
+        loadImage(blockImages.orange.empty, "assets/empty/Orange.png"),
+        loadImage(blockImages.purple.empty, "assets/empty/Purple.png"),
+        loadImage(blockImages.red.empty, "assets/empty/Red.png"),
+        loadImage(blockImages.yellow.empty, "assets/empty/Yellow.png")
+    ]);
 }
 
 function rotate(direction) {
@@ -176,12 +192,13 @@ function rotate(direction) {
 function move(direction) {
     let nextBlocksPositions = getNextBlocksPositions(gamePlayfield.currentBlocksPositions, direction);
     if(nextBlocksPositions.permitted) {
-        let img = gamePlayfield.getBlock(gamePlayfield.currentBlocksPositions[0]).image;
+        let img = {};
+        img = Object.assign(img, gamePlayfield.getBlock(gamePlayfield.currentBlocksPositions[0]).blockImages);
         // REMOVE OLD BLOCKS FROM PLAYFIELD AND CANVAS
         gamePlayfield.currentBlocksPositions.forEach(currentBlockPosition => {
             let oldBlock = gamePlayfield.getBlock(currentBlockPosition);
             oldBlock.falling = false;
-            oldBlock.image = null;
+            oldBlock.blockImages.filled = null;
             gamePlayfield.mainCtx.clearRect(oldBlock.x, oldBlock.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
         });
         // UPDATE currentBlocksPositions
@@ -189,9 +206,26 @@ function move(direction) {
         gamePlayfield.currentBlocksPositions = nextBlocksPositions.positions;
         nextBlocksPositions.positions.forEach(nextBlockPosition => {
             let newBlock = gamePlayfield.getBlock(nextBlockPosition);
-            newBlock.image = img;
+            newBlock.blockImages.filled = img.filled;
             newBlock.falling = true;
-            gamePlayfield.mainCtx.drawImage(newBlock.image, newBlock.x, newBlock.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
+            gamePlayfield.mainCtx.drawImage(newBlock.blockImages.filled, newBlock.x, newBlock.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
+        });
+        // DELETE THE FINAL POSITION TO THE GROUND
+        gamePlayfield.lowestPossiblePositions.forEach(position => {
+            let block = gamePlayfield.getBlock(position);
+            if(block.blockImages.empty !== null) {
+                block.blockImages.empty = null;
+                gamePlayfield.mainCtx.clearRect(block.x, block.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
+            }
+        });
+        // DRAW THE FINAL POSITION TO THE GROUND
+        gamePlayfield.lowestPossiblePositions = findLowestPossiblePositions(gamePlayfield.currentBlocksPositions);
+        gamePlayfield.lowestPossiblePositions.forEach(position => {
+            if(!gamePlayfield.currentBlocksPositions.includes(position)) {
+                let block = gamePlayfield.getBlock(position);
+                block.blockImages.empty = img.empty;
+                gamePlayfield.mainCtx.drawImage(img.empty, block.x, block.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
+            }
         });
     } else if(direction === directions.DOWN || direction === directions.GROUND) {
         gamePlayfield.currentBlocksPositions.forEach(currentBlockPosition => {
@@ -205,7 +239,7 @@ function drawGrid(playfield) {
     let ctx = playfield.gridCtx;
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 3.3;
-    ctx.fillStyle = "#a29bfe";
+    ctx.fillStyle = "#cfccfa";
     ctx.fillRect(0, 0, playfield.canvasWidth, playfield.canvasHeight);
     for (let x = 0; x <= playfield.canvasWidth; x += playfield.blockSize) {
         ctx.moveTo(x, 0);
@@ -258,7 +292,7 @@ function spawnTetromino() {
         let offsetPosition = new PlayfieldPosition(position.i + 1, position.y);
         nextTetrominoPlayfield.currentBlocksPositions.push(offsetPosition);
         let block = nextTetrominoPlayfield.getBlock(offsetPosition);
-        nextTetrominoPlayfield.mainCtx.drawImage(nextTetromino.image, block.x, block.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
+        nextTetrominoPlayfield.mainCtx.drawImage(nextTetromino.blockImages.filled, block.x, block.y, nextTetromino.blockSize, nextTetromino.blockSize);
     });
 
     // DRAW IN THE MAIN TETROMINO CANVAS
@@ -269,8 +303,14 @@ function spawnTetromino() {
             gamePlayfield.currentBlocksPositions.push(position);
             let block = gamePlayfield.getBlock(position);
             block.falling = true;
-            block.image = tetromino.image;
-            gamePlayfield.mainCtx.drawImage(block.image, block.x, block.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
+            block.blockImages.filled = tetromino.blockImages.filled;
+            gamePlayfield.mainCtx.drawImage(block.blockImages.filled, block.x, block.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
+        });
+        // DRAW THE FINAL POSITION TO THE GROUND
+        gamePlayfield.lowestPossiblePositions = findLowestPossiblePositions(gamePlayfield.currentBlocksPositions);
+        gamePlayfield.lowestPossiblePositions.forEach(position => {
+            let block = gamePlayfield.getBlock(position);
+            gamePlayfield.mainCtx.drawImage(tetromino.blockImages.empty, block.x, block.y, gamePlayfield.blockSize, gamePlayfield.blockSize);
         });
         return true;
     } else {
@@ -331,14 +371,15 @@ function isPositionOutside(futurePosition) {
 
 function isPositionAlreadyOccupied(futurePosition) {
     let block = gamePlayfield.getBlock(futurePosition);
-    return block.image != null && block.falling === false;
+    return block.blockImages.filled != null && block.falling === false;
 }
 
 function play() {
+    console.log(gamePlayfield)
     spawnTetromino()
     fallInterval = setInterval(() => {
         move(directions.DOWN)
     }, 500);
 }
 
-init();
+init().then(play);
